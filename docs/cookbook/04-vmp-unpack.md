@@ -13,11 +13,11 @@ embedded strings, and hand the clean binary to Ghidra.
 
 ```yara
 rule vmprotect_3x {
-    meta: author = "mcp-reverse"
-    strings:
-        $vmp_sig = { 68 ?? ?? ?? ?? E8 00 00 00 00 83 04 24 ?? C3 }
-        $vmp_sec = ".vmp0" ascii
-    condition: all of them
+ meta: author = "decompile"
+ strings:
+ $vmp_sig = { 68 ?? ?? ?? ?? E8 00 00 00 00 83 04 24 ?? C3 }
+ $vmp_sec = ".vmp0" ascii
+ condition: all of them
 }
 ```
 
@@ -25,8 +25,8 @@ Scan a sample:
 
 ```jsonc
 { "name": "yara_scan", "arguments": {
-    "sample": "protected.exe",
-    "rulesPath": "./rules/vmp.yar"
+ "sample": "protected.exe",
+ "rulesPath": "./rules/vmp.yar"
 }}
 // → [{"rule":"vmprotect_3x","matches":[…]}]
 ```
@@ -37,7 +37,7 @@ Attach via the bridge:
 
 ```jsonc
 { "name": "x64dbg_run", "arguments": {
-    "cmd": "init protected.exe; bp 0x40A1B2; run"
+ "cmd": "init protected.exe; bp 0x40A1B2; run"
 }}
 ```
 
@@ -45,7 +45,7 @@ When the breakpoint hits, dump:
 
 ```jsonc
 { "name": "x64dbg_run", "arguments": {
-    "cmd": "savedata unpacked.bin, 0x400000, 0x100000"
+ "cmd": "savedata unpacked.bin, 0x400000, 0x100000"
 }}
 ```
 
@@ -56,8 +56,8 @@ When the breakpoint hits, dump:
 // → section layout, Rich header, debug dir — all native, no external deps
 
 { "name": "pattern_mine", "arguments": {
-    "path": "unpacked.bin",
-    "pattern": "68 ?? ?? ?? ?? E8"
+ "path": "unpacked.bin",
+ "pattern": "68 ?? ?? ?? ?? E8"
 }}
 // find leftover VMP stubs to NOP out
 ```
@@ -66,8 +66,8 @@ When the breakpoint hits, dump:
 
 ```jsonc
 { "name": "smart_decompile", "arguments": {
-    "sample": "unpacked.bin",
-    "addr": "0x40A1B2"
+ "sample": "unpacked.bin",
+ "addr": "0x40A1B2"
 }}
 ```
 

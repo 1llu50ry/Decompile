@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎮 mcp-reverse
+# 🎮 decompile
 
 ### 让 Claude、Codex 和 Cursor 组队做逆向工程的 MCP 服务器。
 
@@ -32,19 +32,19 @@
 ## 快速开始
 
 ```bash
-git clone https://github.com/1llu50ry/mcp-reverse
-cd mcp-reverse
+git clone https://github.com/1llu50ry/decompile
+cd decompile
 npm install && npx tsc
-npm test            # 20/20 全过
+npm test # 20/20 全过
 
-./bin/mcp-reverse.mjs stats
-./bin/mcp-reverse.mjs search battleye
-./bin/mcp-reverse.mjs tools
+./bin/decompile.mjs stats
+./bin/decompile.mjs search battleye
+./bin/decompile.mjs tools
 ```
 
 在 Claude Code / Codex / Cursor 的 MCP 配置里加:
 ```json
-{ "mcp-reverse": { "command": "node", "args": ["/path/to/dist/index.js"] } }
+{ "decompile": { "command": "node", "args": ["/path/to/dist/index.js"] } }
 ```
 
 或者用 Docker:

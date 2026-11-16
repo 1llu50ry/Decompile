@@ -31,14 +31,14 @@ Launch each host, open `malware.exe`, let analysis finish.
 ```jsonc
 // request
 { "method": "tools/call", "params": {
-  "name": "smart_decompile",
-  "arguments": { "addr": "0x401000", "sample": "malware.exe" }
+ "name": "smart_decompile",
+ "arguments": { "addr": "0x401000", "sample": "malware.exe" }
 }}
 ```
 
 ```jsonc
 // response (ghidra reachable)
-{ "ok": true, "backend": "ghidra", "code": "int main() { … }" }
+{ "ok": true, "backend": "ghidra", "code": "int main { … }" }
 ```
 
 If Ghidra is down, the hub tries IDA, then Binja — the caller sees
@@ -52,8 +52,8 @@ node -e "import('./tests/mock-bridge-server.mjs').then(m=>m.startMockBridge({hos
 
 # terminal 2 — call it
 curl -s http://127.0.0.1:48760/rpc \
-  -H 'content-type: application/json' \
-  -d '{"tool":"decompile","args":{"addr":"0x401000"}}'
+ -H 'content-type: application/json' \
+ -d '{"tool":"decompile","args":{"addr":"0x401000"}}'
 ```
 
 ## When to use

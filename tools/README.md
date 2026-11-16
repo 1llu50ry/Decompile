@@ -1,16 +1,16 @@
 # tools/
 
-Local tool scaffolding for the mcp-reverse server's RE/debug integrations.
+Local tool scaffolding for the decompile server's RE/debug integrations.
 
 ## Layout
 
 ```
 tools/
-├── README.md                this file
-├── launchers/               shell/powershell launch scripts (optional)
-└── vendor/                  vendored upstream RE tool trees
-    ├── vibe-re/             Vibe-Reverse-Engineering (retools, livetools, tools, ...)
-    └── ida-pro-mcp/         ida-pro-mcp (mrexodia) companion
+├── README.md this file
+├── launchers/ shell/powershell launch scripts (optional)
+└── vendor/ vendored upstream RE tool trees
+ ├── vibe-re/ Vibe-Reverse-Engineering (retools, livetools, tools, ...)
+ └── ida-pro-mcp/ ida-pro-mcp (mrexodia) companion
 ```
 
 ## MCP tools that use this tree
@@ -41,7 +41,7 @@ Install locally and let the server launch them on demand:
 | Cheat Engine MCP | CE 7.5+ with `ceserver-lua` plugin |
 | Frida MCP | `pip install frida-tools frida-mcp` |
 | Hopper MCP | Hopper v4/v5 + `pip install hopper-mcp` |
-| REA | `npx rea-agents setup` **or** `npm install -g rea-agents` |
+| | `npx decompile setup` **or** `npm install -g decompile` |
 | JADX MCP | JADX + `pip install jadx-mcp` |
 | angr MCP | `pip install angr angr-mcp` |
 | Capstone MCP | `pip install capstone capstone-mcp` |
@@ -63,7 +63,7 @@ Python prerequisites once per machine:
 ```bash
 cd tools/vendor/vibe-re
 python -m venv .venv
-.\.venv\Scripts\activate   # Linux/macOS: source .venv/bin/activate
+.\.venv\Scripts\activate # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 ```
 

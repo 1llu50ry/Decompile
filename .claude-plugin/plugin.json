@@ -1,0 +1,63 @@
+{
+  "$schema": "https://claude.com/schemas/plugin.json",
+  "name": "decompile",
+  "displayName": "decompile",
+  "description": "One MCP for reverse engineering across binaries, applications, and runtime behavior. Native parsers, decompiler and debugger bridges, instrumentation, and a 6,000+ skills catalog.",
+  "version": "6.0.0",
+  "author": {
+    "name": "decompile maintainers",
+    "url": "https://github.com/1llu50ry/decompile"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/1llu50ry/decompile",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1llu50ry/decompile.git"
+  },
+  "keywords": [
+    "mcp",
+    "reverse-engineering",
+    "binary-analysis",
+    "decompiler",
+    "disassembly",
+    "debugger",
+    "instrumentation",
+    "memory-analysis",
+    "pe",
+    "elf",
+    "mach-o",
+    "dex",
+    "wasm",
+    "dotnet"
+  ],
+  "mcpServers": {
+    "decompile": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"]
+    }
+  },
+  "skills": [
+    {
+      "path": "skills/workflow",
+      "name": "decompile",
+      "description": "Workflow contract for the decompile MCP server: investigation cycle, evidence shape, backend lifecycle, safe defaults."
+    }
+  ],
+  "commands": [
+    {
+      "name": "decompile-analyze",
+      "description": "Run decompile analyze <path> and inline the structured findings.",
+      "script": "commands/analyze.md"
+    },
+    {
+      "name": "decompile-capabilities",
+      "description": "List every MCP tool and skill the server exposes.",
+      "script": "commands/capabilities.md"
+    },
+    {
+      "name": "decompile-doctor",
+      "description": "Audit runtime, DB, backend bridges, and agent registrations.",
+      "script": "commands/doctor.md"
+    }
+  ]
+}

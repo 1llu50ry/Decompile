@@ -42,10 +42,10 @@ Link against x64dbg's `pluginsdk`:
 
 ```powershell
 cl /std:c++17 /EHsc /LD mcp_bridge.cpp ^
-   /I <x64dbg>\plugins\sdk ^
-   /link <x64dbg>\plugins\sdk\x64dbg.lib ^
-          <x64dbg>\plugins\sdk\x64bridge.lib ^
-   /OUT:mcp_bridge.dp64
+ /I <x64dbg>\plugins\sdk ^
+ /link <x64dbg>\plugins\sdk\x64dbg.lib ^
+ <x64dbg>\plugins\sdk\x64bridge.lib ^
+ /OUT:mcp_bridge.dp64
 ```
 
 Repeat for 32-bit against the x32 sdk.
@@ -63,14 +63,14 @@ Uses CE's bundled LuaSocket. The server runs via a CE timer so the host remains 
 Each client honours a host + port env var:
 
 ```
-MCP_GHIDRA_HOST / MCP_GHIDRA_PORT       (default 127.0.0.1:48760)
-MCP_IDA_HOST / MCP_IDA_PORT             (default 127.0.0.1:48761)
-MCP_RECLASS_HOST / MCP_RECLASS_PORT     (default 127.0.0.1:48762)
-MCP_DNSPY_HOST / MCP_DNSPY_PORT         (default 127.0.0.1:48763)
-MCP_ILSPY_HOST / MCP_ILSPY_PORT         (default 127.0.0.1:48764)
-MCP_X64DBG_HOST / MCP_X64DBG_PORT       (default 127.0.0.1:48765)
-MCP_BINJA_HOST / MCP_BINJA_PORT         (default 127.0.0.1:48766)
-MCP_CESERVER_HOST / MCP_CESERVER_PORT   (default 127.0.0.1:52736)
+MCP_GHIDRA_HOST / MCP_GHIDRA_PORT (default 127.0.0.1:48760)
+MCP_IDA_HOST / MCP_IDA_PORT (default 127.0.0.1:48761)
+MCP_RECLASS_HOST / MCP_RECLASS_PORT (default 127.0.0.1:48762)
+MCP_DNSPY_HOST / MCP_DNSPY_PORT (default 127.0.0.1:48763)
+MCP_ILSPY_HOST / MCP_ILSPY_PORT (default 127.0.0.1:48764)
+MCP_X64DBG_HOST / MCP_X64DBG_PORT (default 127.0.0.1:48765)
+MCP_BINJA_HOST / MCP_BINJA_PORT (default 127.0.0.1:48766)
+MCP_CESERVER_HOST / MCP_CESERVER_PORT (default 127.0.0.1:52736)
 ```
 
 Use these when the host tool runs on a different box (DMA labs, kernel-debug mirror, test VM, etc).
@@ -84,4 +84,4 @@ Every plugin shares the same tiny protocol:
 - On unknown path: `404 {"error": "unknown path"}`.
 - On exception: `500 {"error": "..."}`.
 
-The native TS clients never try to be clever — they `fetch()` the endpoint and forward the response verbatim, which keeps the plugin and the client decoupled.
+The native TS clients never try to be clever — they `fetch` the endpoint and forward the response verbatim, which keeps the plugin and the client decoupled.

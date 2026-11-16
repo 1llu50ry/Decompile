@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Install mcp-reverse as a systemd service.
+# Install decompile as a systemd service.
 #
 # Usage (as root):
-#   sudo ./deploy/systemd/install.sh [--prefix /opt/mcp-reverse] [--user mcp]
+#   sudo ./deploy/systemd/install.sh [--prefix /opt/decompile] [--user mcp]
 set -euo pipefail
 
-PREFIX="/opt/mcp-reverse"
+PREFIX="/opt/decompile"
 SVC_USER="mcp"
 
 while [[ $# -gt 0 ]]; do
@@ -31,9 +31,9 @@ echo "[+] installing deps + building"
 sudo -u "$SVC_USER" sh -c "cd '$PREFIX' && npm ci --production && npm run build"
 
 echo "[+] installing unit"
-sed "s#/opt/mcp-reverse#$PREFIX#g" "$(dirname "$0")/mcp-reverse.service" >/etc/systemd/system/mcp-reverse.service
-sed -i "s#User=mcp#User=$SVC_USER#; s#Group=mcp#Group=$SVC_USER#" /etc/systemd/system/mcp-reverse.service
+sed "s#/opt/decompile#$PREFIX#g" "$(dirname "$0")/decompile.service" >/etc/systemd/system/decompile.service
+sed -i "s#User=mcp#User=$SVC_USER#; s#Group=mcp#Group=$SVC_USER#" /etc/systemd/system/decompile.service
 
 systemctl daemon-reload
-systemctl enable --now mcp-reverse
-echo "[+] done. systemctl status mcp-reverse"
+systemctl enable --now decompile
+echo "[+] done. systemctl status decompile"

@@ -1,4 +1,4 @@
-# Install mcp-reverse as a Windows service using NSSM.
+# Install decompile as a Windows service using NSSM.
 #
 #   .\deploy\windows\install-service.ps1 -Install  [-Port 7777] [-Token <secret>]
 #   .\deploy\windows\install-service.ps1 -Uninstall
@@ -14,7 +14,7 @@ param(
   [int]$Port = 7777,
   [string]$Token = "",
   [string]$FsAllow = "C:\samples;C:\reverse-projects",
-  [string]$ServiceName = "mcp-reverse"
+  [string]$ServiceName = "decompile"
 )
 
 $ErrorActionPreference = "Stop"

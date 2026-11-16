@@ -13,6 +13,15 @@ Thumbs.db
 # via the vendoring process. Do not publish the raw clones.
 /better-options/
 
+# Reference source trees (grouped by technology). Several GB of material
+# we keep locally for research and porting — never shipped with the
+# npm package or committed to git.
+/sources/
+
+# Rust core build artifacts — binary is shipped pre-built via the
+# `files` field in package.json; the full target tree isn't.
+/core/target/
+
 # tools/vendor/ was removed in v5.0.1. Keep the path ignored so a stray
 # `git clone` into tools/vendor/<x> doesn't sneak back into the repo —
 # every piece of functionality we need from those projects now lives

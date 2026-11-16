@@ -1,0 +1,22 @@
+[package]
+name = "decompile"
+version = "6.0.0"
+edition = "2021"
+rust-version = "1.75"
+description = "Core CLI and native analyzers for the decompile MCP server."
+license = "MIT"
+
+[[bin]]
+name = "decompile"
+path = "src/main.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

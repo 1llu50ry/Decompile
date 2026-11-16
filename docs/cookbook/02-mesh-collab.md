@@ -17,16 +17,16 @@ with atomic write-rename, so a crashed participant doesn't lose state.
 ## Flow
 
 ```
-┌────────┐     join    ┌───────────┐
-│ claude │ ──────────► │           │
-├────────┤             │   mesh    │
-│ gpt-4  │ ──────────► │  channel  │
-├────────┤             │ #triage-7 │
-│ cursor │ ──────────► │           │
-└────────┘             └───────────┘
-     ▲                        │
-     │  handoff "decompile"   │
-     └────────────────────────┘
+┌────────┐ join ┌───────────┐
+│ claude │ ──────────► │ │
+├────────┤ │ mesh │
+│ gpt-4 │ ──────────► │ channel │
+├────────┤ │ #triage-7 │
+│ cursor │ ──────────► │ │
+└────────┘ └───────────┘
+ ▲ │
+ │ handoff "decompile" │
+ └────────────────────────┘
 ```
 
 ## MCP sequence
@@ -46,9 +46,9 @@ with atomic write-rename, so a crashed participant doesn't lose state.
 
 // 5 — ask for a plan vote
 { "name": "agent_mesh_vote_open", "arguments": {
-    "channel": "triage-7",
-    "question": "Dump at OEP or trace through VM?",
-    "options": ["dump", "trace"]
+ "channel": "triage-7",
+ "question": "Dump at OEP or trace through VM?",
+ "options": ["dump", "trace"]
 }}
 
 // 6 — each model casts
@@ -56,9 +56,9 @@ with atomic write-rename, so a crashed participant doesn't lose state.
 
 // 7 — hand off the actual dump task
 { "name": "agent_mesh_handoff", "arguments": {
-    "channel": "triage-7",
-    "to": "cursor-agent",
-    "task": "Attach x64dbg at 0x40A1B2 and run `dump memory`."
+ "channel": "triage-7",
+ "to": "cursor-agent",
+ "task": "Attach x64dbg at 0x40A1B2 and run `dump memory`."
 }}
 ```
 

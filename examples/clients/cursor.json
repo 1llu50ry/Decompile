@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "mcp-reverse": {
+    "decompile": {
       "command": "npx",
-      "args": ["-y", "mcp-reverse"],
+      "args": ["-y", "decompile"],
       "env": {
         "MCP_FS_ALLOW": "${workspaceFolder}"
       }

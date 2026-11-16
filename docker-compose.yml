@@ -1,18 +1,19 @@
-# Compose file for running mcp-reverse as a long-lived HTTP service.
+# Compose file for running decompile as a long-lived HTTP service.
 # Clients (Claude Desktop, Cursor, etc.) point at http://localhost:7777/mcp
 # with the bearer token below in Authorization: Bearer <token>.
 #
 #   docker compose up -d
 #   docker compose logs -f
-#   docker compose exec mcp-reverse node bin/mcp-reverse.mjs stats
+#   docker compose exec decompile node bin/mcp-reverse.mjs stats   # legacy entry
+#   docker compose exec decompile node bin/decompile.mjs stats      # primary
 
 services:
-  mcp-reverse:
-    image: ghcr.io/1llu50ry/mcp-reverse:latest
+  decompile:
+    image: ghcr.io/1llu50ry/decompile:latest
     # To build locally instead of pulling:
     #build:
     #  context: .
-    container_name: mcp-reverse
+    container_name: decompile
     restart: unless-stopped
     ports:
       - "127.0.0.1:7777:7777"

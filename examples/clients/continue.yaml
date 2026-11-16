@@ -1,10 +1,10 @@
-name: mcp-reverse
+name: decompile
 version: 1.0.0
 schema: v1
 mcpServers:
-  - name: mcp-reverse
+  - name: decompile
     command: node
     args:
-      - /path/to/mcp-reverse/dist/index.js
+      - /path/to/decompile/dist/index.js
     env:
       MCP_FS_ALLOW: /samples:/reverse-projects

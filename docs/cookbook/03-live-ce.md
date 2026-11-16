@@ -31,7 +31,7 @@ Start Cheat Engine (auto-loads `autorun/mcp_bridge.lua`) and ReClass.NET
 { "name": "ce_attach", "arguments": { "pid": 4512 }}
 
 { "name": "ce_aob_scan", "arguments": {
-    "pattern": "48 8B 05 ?? ?? ?? ?? 48 85 C0 74 ?? F3 0F 10 48"
+ "pattern": "48 8B 05 ?? ?? ?? ?? 48 85 C0 74 ?? F3 0F 10 48"
 }}
 // → ["0x7FF6ABCD1234"]
 ```
@@ -40,8 +40,8 @@ Start Cheat Engine (auto-loads `autorun/mcp_bridge.lua`) and ReClass.NET
 
 ```jsonc
 { "name": "ce_read_bytes", "arguments": {
-    "addr": "0x7FF6ABCD1234",
-    "size": 256
+ "addr": "0x7FF6ABCD1234",
+ "size": 256
 }}
 ```
 
@@ -49,12 +49,12 @@ Start Cheat Engine (auto-loads `autorun/mcp_bridge.lua`) and ReClass.NET
 
 ```jsonc
 { "name": "reclass_open_at", "arguments": {
-    "addr": "0x7FF6ABCD1234",
-    "name": "Player"
+ "addr": "0x7FF6ABCD1234",
+ "name": "Player"
 }}
 
 { "name": "reclass_set_field", "arguments": {
-    "class": "Player", "offset": "0x18", "type": "float", "name": "health"
+ "class": "Player", "offset": "0x18", "type": "float", "name": "health"
 }}
 
 { "name": "reclass_export_header" }

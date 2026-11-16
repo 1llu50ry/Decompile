@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🎮 mcp-reverse
+# 🎮 decompile
 
-### The MCP server that turns Claude, Codex, and Cursor into a reverse-engineering team.
+### One MCP for reverse engineering across binaries, applications, and runtime behavior.
 
-**180+ MCP tools · 56 RE/debug backends · 9 host-side plugins · 4,200+ skills · multi-agent mesh · native x86-64 + ARM64 emulators**
+**230+ MCP tools · 60+ RE/debug backends · 9 host-side plugins · 6,000+ skills · 170+ agents · 160+ subagents · 190+ plugins · 3,000+ prompts · multi-agent mesh · native x86-64 + ARM64 emulators**
 
-[![version](https://img.shields.io/badge/version-5.0.1-blue)](CHANGELOG.md) [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/) [![tools](https://img.shields.io/badge/MCP%20tools-180%2B-blue)](src/) [![backends](https://img.shields.io/badge/RE%20backends-56-blueviolet)](src/retools.ts) [![skills](https://img.shields.io/badge/skills-4%2C200%2B-orange)](skills/) [![docker](https://img.shields.io/badge/docker-multi--arch-informational)](Dockerfile) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![audit](https://img.shields.io/badge/npm%20audit-0-brightgreen)](package.json)
+[![version](https://img.shields.io/badge/version-6.0.0-blue)](CHANGELOG.md) [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/) [![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/) [![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts) [![skills](https://img.shields.io/badge/skills-6%2C000%2B-orange)](db/skills.db) [![docker](https://img.shields.io/badge/docker-multi--arch-informational)](Dockerfile) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![audit](https://img.shields.io/badge/npm%20audit-0-brightgreen)](package.json)
 
 > **v5.0.0 released.** 19 GiB → 3.3 GiB working tree (83% smaller via gzipped source archives), + four feature waves: host plugin build systems, Frida bridge + dynamic analysis, ARM64 emulator + decompile cache + chunking, bindiff / ROP / game-engine metadata / MCP sampling / SVG visualization. See [CHANGELOG](CHANGELOG.md).
 
@@ -20,40 +20,75 @@
 
 ## Why this exists
 
-Reverse engineering a modern game involves five static tools (Ghidra, IDA, Binary Ninja, radare2, Hopper), three debuggers (x64dbg, WinDbg, GDB/LLDB), a hex-editor, a memory scanner (Cheat Engine), an instrumentation framework (Frida), and a stack of format parsers (PE, ELF, Mach-O, DEX, Minidump, Unity AssetBundle, UE `.pak`). Switching between them costs hours. Teaching a model to drive even one of them well costs more.
+Reverse engineering a modern application involves five static tools (Ghidra, IDA, Binary Ninja, radare2, Hopper), three debuggers (x64dbg, WinDbg, GDB/LLDB), a hex-editor, a memory scanner, an instrumentation framework, and a stack of format parsers (PE, ELF, Mach-O, DEX, Minidump, WASM, .NET, ASAR, GGUF, BEAM, Go). Switching between them costs hours. Teaching a model to drive even one of them well costs more.
 
 **This server:**
 
-1. **Aggregates 59 existing RE / debug MCP backends** behind one connection — `smart_decompile` picks IDA when running, falls back to Ghidra, then Binja, then RetDec.
-2. **Ships 111 native MCP tools** so most answers don't need an external backend at all — PE / ELF / Mach-O / DEX / WASM / Minidump / ZIP / .NET / IL2CPP metadata parsers, AoB signature scan, Shannon entropy, crypto-constant identification, PDB70 → Microsoft symbol server URL.
-3. **Lets Claude, Codex, and Cursor collaborate** through a shared mesh — DM, channels, task handoff, adversarial voting, shared KV knowledge-base, named locks for coordination. Zero-dep JSON persistence.
-4. **Curates 4,200+ skills** — 246 hand-written deep references on anti-cheat (BattlEye, EAC, Vanguard, VAC, FACEIT, Byfron, Ricochet, mhyprot) and 3,985 archived open-source projects with full source dumps.
+1. **Aggregates 60+ RE / debug MCP backends** behind one connection — `smart_decompile` picks IDA when running, falls back to Ghidra, then Binary Ninja, then radare2.
+2. **Ships 230+ native MCP tools** so most answers don't need an external backend at all — PE / ELF / Mach-O / DEX / WASM / Minidump / ZIP / .NET / IL2CPP / ASAR / GGUF / BEAM / Go buildinfo parsers, AoB signature scan, Shannon entropy, crypto-constant identification, PDB70 → Microsoft symbol server URL, PyInstaller TOC, HAR summary, SQLite inspect, ELF notes, Apple IPS.
+3. **Lets agents collaborate** through a shared mesh — DM, channels, task handoff, adversarial voting, shared KV knowledge-base, named locks for coordination. Zero-dep JSON persistence.
+4. **Curates 6,000+ skills, 170+ agents, 160+ subagents, 190+ plugins, 3,000+ prompts** — hand-written deep references plus imported open-source techniques, full-text searchable.
+5. **Ships a one-shot CLI** (`decompile setup`, `decompile analyze <path>`, `decompile capabilities`, `decompile doctor`) that registers the MCP with Claude Code / Cursor / Codex / Windsurf / Gemini and returns structured findings with evidence and unknowns.
 
-If you're on security-research, cheat-detection, defensive-engineering, or game-SDK work — this collapses a day of tool-shuffling into one MCP connection.
+If you're on security-research, binary-analysis, defensive-engineering, or SDK work — this collapses a day of tool-shuffling into one MCP connection.
 
 ## 30-second quickstart
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/1llu50ry/mcp-reverse?quickstart=1)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/1llu50ry/decompile?quickstart=1)
 
+### The one-liner
 
 ```bash
-# clone + build
-git clone https://github.com/1llu50ry/mcp-reverse && cd mcp-reverse
+npx -y decompile@latest setup
+```
+
+By default it configures Claude Code. Pass `-i` for an interactive
+picker over 42 supported agents (Claude Code / Desktop, Codex, Cursor,
+VS Code, Zed, Windsurf, Gemini CLI, Grok Build, Qwen Code, Kimi,
+DeepSeek Harness, LM Studio, Cline in every host, Copilot CLI, Goose,
+and 25+ more). The workflow-instructions skill is installed alongside
+the registration. Restart your agent and you're done.
+
+Variations:
+
+```bash
+npx -y decompile@latest setup -i                           # interactive picker (42 agents)
+npx -y decompile@latest setup --all-detected               # every detected agent
+npx -y decompile@latest setup --client claude_code         # one specific client
+npx -y decompile@latest setup --client codex --client cursor --client dsh
+npx -y decompile@latest setup --dry-run                    # preview without writing
+npx -y decompile@latest setup --npx                        # cache-safe (npx-based) registration
+npm install -g decompile && decompile --help               # install the command permanently
+```
+
+### Other entry points
+
+```bash
+# clone + build (local dev)
+git clone https://github.com/1llu50ry/decompile && cd decompile
 npm install && npx tsc
-npm test            # 20/20 should pass
+npm test # 20/20 should pass
 
-# wire into Claude Code / Codex / Cursor (stdio mode)
-# (add this JSON to your client's MCP config)
-#   { "mcp-reverse": { "command": "node", "args": ["/path/to/dist/index.js"] } }
-
-# OR run over HTTP (Docker-friendly)
+# run the MCP server over HTTP (Docker-friendly)
 docker compose up
 
-# OR drive it from the CLI (no MCP client needed)
-./bin/mcp-reverse.mjs stats
-./bin/mcp-reverse.mjs search battleye
-./bin/mcp-reverse.mjs tools    # list every registered MCP tool
+# drive it from the CLI (no MCP client needed)
+decompile analyze path/to/binary       # structured findings JSON
+decompile capabilities                 # list every tool + skill
+decompile doctor                       # runtime + DB + registrations
+decompile providers                    # list configured RE backends
+decompile guidance                     # print the workflow instructions
 ```
+
+### Ask the agent
+
+```text
+Understand how feature X works in that app, show me the evidence,
+and port it to my project.
+```
+
+Replace `X` and `that app` with your actual target; the server returns
+structured findings with evidence tool-backed and unknowns called out.
 
 Point your MCP client at it, then ask any of:
 
@@ -66,33 +101,33 @@ Point your MCP client at it, then ask any of:
 
 ```mermaid
 flowchart LR
-  subgraph clients[" MCP clients "]
-    C1[Claude Code]
-    C2[Codex / ChatGPT]
-    C3[Cursor]
-    C4[Copilot CLI]
-    C5[custom]
-  end
+ subgraph clients[" MCP clients "]
+ C1[Claude Code]
+ C2[Codex / ChatGPT]
+ C3[Cursor]
+ C4[Copilot CLI]
+ C5[custom]
+ end
 
-  subgraph server[" mcp-reverse (this repo) "]
-    direction TB
-    T[111 MCP tools]
-    M[Agent Mesh<br/>DM · channels · tasks · votes · KB · locks]
-    H[MCP Hub<br/>smart_decompile · consensus_call]
-    N[Native parsers<br/>PE · ELF · Mach-O · DEX · WASM · Minidump · ZIP · .NET]
-    S[Skill library<br/>4,200+ docs · BM25]
-  end
+ subgraph server[" decompile (this repo) "]
+ direction TB
+ T[230+ MCP tools]
+ M[Agent Mesh<br/>DM · channels · tasks · votes · KB · locks]
+ H[MCP Hub<br/>smart_decompile · consensus_call]
+ N[Native parsers<br/>PE · ELF · Mach-O · DEX · WASM · Minidump · ZIP · .NET · ASAR · GGUF · BEAM · Go]
+ S[Skill library<br/>6,000+ docs · BM25]
+ end
 
-  subgraph backends[" 59 RE / debug MCP backends "]
-    B1[Ghidra · IDA · Binja]
-    B2[x64dbg · WinDbg · GDB · LLDB]
-    B3[Cheat Engine · Frida]
-    B4[PCILeech · Memflow]
-    B5[Volatility · YARA · angr]
-  end
+ subgraph backends[" 60+ RE / debug MCP backends "]
+ B1[Ghidra · IDA · Binja]
+ B2[x64dbg · WinDbg · GDB · LLDB]
+ B3[Cheat Engine · Frida]
+ B4[PCILeech · Memflow]
+ B5[Volatility · YARA · angr]
+ end
 
-  C1 & C2 & C3 & C4 & C5 -->|stdio or HTTP| server
-  server -->|hub_connect| B1 & B2 & B3 & B4 & B5
+ C1 & C2 & C3 & C4 & C5 -->|stdio or HTTP| server
+ server -->|hub_connect| B1 & B2 & B3 & B4 & B5
 ```
 
 ## Verticals
@@ -101,8 +136,8 @@ The game-hacking framing is historical — the tooling covers every RE disciplin
 
 | Vertical | Why this project fits | Docs |
 |---|---|---|
-| 🎮 **Game security + anti-cheat** | 4,200+ hand-written skills across BattlEye, EAC, Vanguard, VAC, FACEIT, Byfron, Ricochet, mhyprot, Hyperion. | this README |
-| 🦠 **Malware analysis** | PE / minidump / Rich Header / Debug Directory parsers + 59-backend hub (YARA, Volatility, angr, Qiling). | [docs/verticals/malware-analysis.md](docs/verticals/malware-analysis.md) |
+| 🎮 **Game security + anti-cheat** | 6,000+ hand-written + imported skills across every major anti-cheat and engine family. | this README |
+| 🦠 **Malware analysis** | PE / minidump / Rich Header / Debug Directory parsers + 60+ backend hub (YARA, Volatility, angr, Qiling). | [docs/verticals/malware-analysis.md](docs/verticals/malware-analysis.md) |
 | 📱 **Mobile security (iOS + Android)** | Mach-O (fat + arm64e) + DEX + APK parsers + Hopper + Frida + JADX + Magisk + idevice MCPs. | [docs/verticals/mobile-security.md](docs/verticals/mobile-security.md) |
 | 🔧 **Firmware / IoT** | ELF + Qiling + Unicorn + angr for embedded. | [docs/verticals/firmware-iot.md](docs/verticals/firmware-iot.md) |
 | 🏁 **CTF / exploit development** | pwndbg + GEF + angr + AFL++ + honggfuzz + LibAFL + Unicorn + ret-sync all behind one hub. | [docs/verticals/ctf-pwn.md](docs/verticals/ctf-pwn.md) |
@@ -111,11 +146,11 @@ The game-hacking framing is historical — the tooling covers every RE disciplin
 
 | Project | Scope | Tools | Backends | Multi-agent | Skills archive |
 |---|---|---:|---:|:---:|---:|
-| **mcp-reverse** (this repo) | Game RE + anti-cheat + mesh orchestration | **111** | **59** | ✅ | **4,200+** |
+| **decompile** (this repo) | Game RE + anti-cheat + mesh orchestration | **111** | **59** | ✅ | **4,200+** |
 | [GhidraMCP](https://github.com/LaurieWired/GhidraMCP) | Ghidra bridge | 5 | 1 | — | — |
 | [ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp) | IDA bridge | ~50 | 1 | — | — |
 | [SuperghidraMCP](https://github.com/yuatemycat/SuperGhidraMCP) | pyghidra | 38 | 1 | — | — |
-| [REA](https://rea.tools) | Cross-stack RE (native + Electron + .NET) | ~40 | 3 | — | — |
+| [](https://) | Cross-stack RE (native + Electron + .NET) | ~40 | 3 | — | — |
 | [Vibe-RE](https://github.com/wit-x/Vibe-Reverse-Engineering) | PE triage pipeline | ~30 | 1 | — | — |
 
 ## Ethics & responsible use
@@ -262,7 +297,7 @@ Read [SECURITY.md](SECURITY.md) for responsible disclosure. By contributing you 
 
 ### RE / Debug MCP Integrations (v4.1)
 
-Launch and drive **43** external RE and debugging MCP servers directly from this server. Supported backends: **GhidraMCP, SuperghidraMCP (pyghidra-mcp, +gui), Ghidrathon MCP, ida-pro-mcp, Hex-Rays IDA MCP, Binary Ninja MCP, radare2 MCP, x64dbg MCP Server, WinDbg MCP, Cheat Engine MCP, Frida MCP, Hopper MCP, REA, Vibe-RE, JADX MCP, angr MCP, Capstone MCP, PCILeech/MemProcFS MCP, Memflow MCP, Scylla MCP, dnSpyEx MCP, ReClass.NET MCP, Volatility3 MCP, Wireshark/tshark MCP, mitmproxy MCP, dotPeek MCP, Unicorn MCP, ret-sync MCP, BinDiff MCP, Diaphora MCP, Qiling MCP, unidbg MCP, Reko (OpenReality) MCP, QEMU trace MCP, LLDB MCP, GDB MCP, Burp MCP, YARA MCP, ClrMD MCP, Binja-Ghidra sync MCP, Dolphin DME MCP, Cemu IPC MCP**.
+Launch and drive **43** external RE and debugging MCP servers directly from this server. Supported backends: **GhidraMCP, SuperghidraMCP (pyghidra-mcp, +gui), Ghidrathon MCP, ida-pro-mcp, Hex-Rays IDA MCP, Binary Ninja MCP, radare2 MCP, x64dbg MCP Server, WinDbg MCP, Cheat Engine MCP, Frida MCP, Hopper MCP, Vibe-RE, JADX MCP, angr MCP, Capstone MCP, PCILeech/MemProcFS MCP, Memflow MCP, Scylla MCP, dnSpyEx MCP, ReClass.NET MCP, Volatility3 MCP, Wireshark/tshark MCP, mitmproxy MCP, dotPeek MCP, Unicorn MCP, ret-sync MCP, BinDiff MCP, Diaphora MCP, Qiling MCP, unidbg MCP, Reko (OpenReality) MCP, QEMU trace MCP, LLDB MCP, GDB MCP, Burp MCP, YARA MCP, ClrMD MCP, Binja-Ghidra sync MCP, Dolphin DME MCP, Cemu IPC MCP**.
 
 | Tool | Description |
 |------|------------|
@@ -343,12 +378,12 @@ Tools (6): `hub_connect`, `hub_list`, `hub_call`, `hub_disconnect`, `smart_decom
 ### CLI
 
 ```bash
-mcp-reverse stats                 # library counts
-mcp-reverse lookup battleye       # print SKILL.md
-mcp-reverse search anti-cheat     # keyword search
-mcp-reverse tools                 # list every MCP tool
-mcp-reverse health [url]          # probe /healthz
-mcp-reverse serve                 # start the MCP server
+decompile stats # library counts
+decompile lookup battleye # print SKILL.md
+decompile search anti-cheat # keyword search
+decompile tools # list every MCP tool
+decompile health [url] # probe /healthz
+decompile serve # start the MCP server
 ```
 
 ### Path sandbox (security)
@@ -361,9 +396,9 @@ Set `MCP_TRANSPORT=http` to run the server over Streamable HTTP instead of stdio
 
 ```bash
 MCP_TRANSPORT=http MCP_HTTP_PORT=7777 MCP_HTTP_HOST=127.0.0.1 node dist/index.js
-# → MCP endpoint:  POST http://127.0.0.1:7777/mcp
-# → readiness:     GET  http://127.0.0.1:7777/healthz
-# → Prometheus:    GET  http://127.0.0.1:7777/metrics
+# → MCP endpoint: POST http://127.0.0.1:7777/mcp
+# → readiness: GET http://127.0.0.1:7777/healthz
+# → Prometheus: GET http://127.0.0.1:7777/metrics
 ```
 
 ### Tests
@@ -388,7 +423,7 @@ CI runs on push + PR (Node 18/20/22 matrix): [.github/workflows/ci.yml](.github/
 ### Build
 
 ```bash
-cd mcp-reverse
+cd decompile
 npm install
 npm run build
 ```
@@ -399,12 +434,12 @@ Add to your MCP settings:
 
 ```json
 {
-  "mcpServers": {
-    "gamehacking": {
-      "command": "node",
-      "args": ["/path/to/mcp-reverse/dist/index.js"]
-    }
-  }
+ "mcpServers": {
+ "gamehacking": {
+ "command": "node",
+ "args": ["/path/to/decompile/dist/index.js"]
+ }
+ }
 }
 ```
 
@@ -414,12 +449,12 @@ Add to `claude_desktop_config.json`:
 
 ```json
 {
-  "mcpServers": {
-    "gamehacking": {
-      "command": "node",
-      "args": ["/path/to/mcp-reverse/dist/index.js"]
-    }
-  }
+ "mcpServers": {
+ "gamehacking": {
+ "command": "node",
+ "args": ["/path/to/decompile/dist/index.js"]
+ }
+ }
 }
 ```
 
@@ -429,12 +464,12 @@ Add to `.cursor/mcp.json`:
 
 ```json
 {
-  "mcpServers": {
-    "gamehacking": {
-      "command": "node",
-      "args": ["/path/to/mcp-reverse/dist/index.js"]
-    }
-  }
+ "mcpServers": {
+ "gamehacking": {
+ "command": "node",
+ "args": ["/path/to/decompile/dist/index.js"]
+ }
+ }
 }
 ```
 
@@ -489,46 +524,46 @@ Kernel exploit and driver development agent...
 ## Project Structure
 
 ```
-mcp-reverse/
-+-- src/index.ts              # MCP server (16 tools)
-+-- dist/                      # Compiled JS
-+-- skills/                    # 4,161 skill directories
-|   +-- <hand-written>/        #   177 curated deep-dive skills
-|   +-- ags-*/                 #   3,985 archived projects
-|       +-- SKILL.md           #     description + metadata
-|       +-- source.txt         #     full source tree snapshot
-+-- agents/                    # 75 agents across 7 categories
-|   +-- games/        (15)     #   CS2, Valorant, Fortnite, Apex, etc.
-|   +-- engines/      (10)     #   UE4/5, Unity, Source, CryEngine, etc.
-|   +-- anti-cheat/   (10)     #   EAC, BE, Vanguard, FACEIT, Byfron, etc.
-|   +-- kernel/       (10)     #   drivers, HV, firmware, DMA, EPT
-|   +-- techniques/   (10)     #   injection, hooking, obfuscation, etc.
-|   +-- tools/        (10)     #   IDA, Ghidra, WinDbg, Frida, x64dbg
-|   +-- core/         (10)     #   RE, exploits, cheatdev, malware, etc.
-+-- subagents/                 # 161 subagents across 16 categories
-|   +-- offsets/      (10)     +-- patterns/     (10)
-|   +-- code-analysis/(10)     +-- anti-cheat/   (11)
-|   +-- kernel/       (10)     +-- injection/    (10)
-|   +-- hooks/        (10)     +-- rendering/    (10)
-|   +-- memory/       (10)     +-- network/      (10)
-|   +-- game-data/    (10)     +-- stealth/      (10)
-|   +-- reversing/    (10)     +-- platform/     (10)
-|   +-- build/        (10)     +-- testing/      (10)
-+-- plugins/                   # 114 plugins across 11 categories
-|   +-- game-offsets/ (11)     +-- engine-sdks/  (10)
-|   +-- anti-cheat/   (10)     +-- windows-int/  (10)
-|   +-- technique-ref/(13)     +-- tool-finders/ (10)
-|   +-- code-gen/     (10)     +-- binary-anal/  (10)
-|   +-- crypto/       (10)     +-- detection/    (10)
-|   +-- rendering/    (10)
-+-- prompts/                   # 148 prompts across 14 categories
-|   +-- build/        (11)     +-- write/        (16)
-|   +-- implement/    (11)     +-- reverse/      (10)
-|   +-- bypass/       (10)     +-- analyze/      (10)
-|   +-- design/       (10)     +-- exploit/      (10)
-|   +-- compare/      (10)     +-- debug/        (10)
-|   +-- generate/     (10)     +-- migrate/      (10)
-|   +-- optimize/     (10)     +-- setup/        (10)
+decompile/
++-- src/index.ts # MCP server (16 tools)
++-- dist/ # Compiled JS
++-- skills/ # 4,161 skill directories
+| +-- <hand-written>/ # 177 curated deep-dive skills
+| +-- ags-*/ # 3,985 archived projects
+| +-- SKILL.md # description + metadata
+| +-- source.txt # full source tree snapshot
++-- agents/ # 75 agents across 7 categories
+| +-- games/ (15) # CS2, Valorant, Fortnite, Apex, etc.
+| +-- engines/ (10) # UE4/5, Unity, Source, CryEngine, etc.
+| +-- anti-cheat/ (10) # EAC, BE, Vanguard, FACEIT, Byfron, etc.
+| +-- kernel/ (10) # drivers, HV, firmware, DMA, EPT
+| +-- techniques/ (10) # injection, hooking, obfuscation, etc.
+| +-- tools/ (10) # IDA, Ghidra, WinDbg, Frida, x64dbg
+| +-- core/ (10) # RE, exploits, cheatdev, malware, etc.
++-- subagents/ # 161 subagents across 16 categories
+| +-- offsets/ (10) +-- patterns/ (10)
+| +-- code-analysis/(10) +-- anti-cheat/ (11)
+| +-- kernel/ (10) +-- injection/ (10)
+| +-- hooks/ (10) +-- rendering/ (10)
+| +-- memory/ (10) +-- network/ (10)
+| +-- game-data/ (10) +-- stealth/ (10)
+| +-- reversing/ (10) +-- platform/ (10)
+| +-- build/ (10) +-- testing/ (10)
++-- plugins/ # 114 plugins across 11 categories
+| +-- game-offsets/ (11) +-- engine-sdks/ (10)
+| +-- anti-cheat/ (10) +-- windows-int/ (10)
+| +-- technique-ref/(13) +-- tool-finders/ (10)
+| +-- code-gen/ (10) +-- binary-anal/ (10)
+| +-- crypto/ (10) +-- detection/ (10)
+| +-- rendering/ (10)
++-- prompts/ # 148 prompts across 14 categories
+| +-- build/ (11) +-- write/ (16)
+| +-- implement/ (11) +-- reverse/ (10)
+| +-- bypass/ (10) +-- analyze/ (10)
+| +-- design/ (10) +-- exploit/ (10)
+| +-- compare/ (10) +-- debug/ (10)
+| +-- generate/ (10) +-- migrate/ (10)
+| +-- optimize/ (10) +-- setup/ (10)
 +-- package.json
 +-- tsconfig.json
 ```
@@ -576,7 +611,7 @@ This project aggregates publicly available research materials and open-source pr
 
 ---
 
-# mcp-reverse (RU)
+# decompile (RU)
 
 MCP-сервер для геймхакинга и реверс-инжиниринга. База знаний из **4,100+ скиллов** с полными архивами исходного кода, специализированными агентами и инструментами.
 
@@ -601,12 +636,12 @@ npm run build
 
 ```json
 {
-  "mcpServers": {
-    "gamehacking": {
-      "command": "node",
-      "args": ["/path/to/mcp-reverse/dist/index.js"]
-    }
-  }
+ "mcpServers": {
+ "gamehacking": {
+ "command": "node",
+ "args": ["/path/to/decompile/dist/index.js"]
+ }
+ }
 }
 ```
 

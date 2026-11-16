@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "mcp-reverse": {
+    "decompile": {
       "command": "node",
-      "args": ["C:\\path\\to\\mcp-reverse\\dist\\index.js"],
+      "args": ["C:\\path\\to\\decompile\\dist\\index.js"],
       "env": {
         "MCP_FS_ALLOW": "C:\\samples;C:\\reverse-projects",
         "MCP_RATE_LIMIT": "1",

@@ -18,7 +18,7 @@ To unlock 10k+ stars, the project must address audiences beyond game security. T
 
 **Need to add**:
 - Skills: generic unpacker chain, YARA generator from unpacked samples, memory forensics walkthrough.
-- Rename / alias: `mcp-reverse-engineering` or `mcp-rever-everything` so the name doesn't ghetto-ize us.
+- Rename / alias: `decompile-engineering` or `mcp-rever-everything` so the name doesn't ghetto-ize us.
 - Audience: SentinelOne, CrowdStrike, Mandiant engineers; MalwareBytes; r/Malware; MalwareTechBlog.
 
 ### 2. Mobile security
@@ -77,7 +77,7 @@ Game hacking stays the depth-of-knowledge differentiator. We don't dilute 4,200 
 
 - Game hacking becomes **a** vertical, not the only vertical.
 - README leads with the generic pitch; game-hacking shows up as the first vertical card.
-- Alias package names (`mcp-reverse-engineering`, `mcp-ctf`, `mcp-malware-analysis`) all point at the same codebase.
+- Alias package names (`decompile-engineering`, `mcp-ctf`, `mcp-malware-analysis`) all point at the same codebase.
 
 ## Implementation checklist
 

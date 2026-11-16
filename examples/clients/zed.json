@@ -1,9 +1,9 @@
 {
   "context_servers": {
-    "mcp-reverse": {
+    "decompile": {
       "command": {
         "path": "node",
-        "args": ["/path/to/mcp-reverse/dist/index.js"],
+        "args": ["/path/to/decompile/dist/index.js"],
         "env": {
           "MCP_FS_ALLOW": "~/reverse-projects"
         }

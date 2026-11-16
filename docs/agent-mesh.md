@@ -24,17 +24,17 @@ Persistence is a single JSON file under `<project>/.agent-mesh/mesh.json` (overr
 ## Typical flow (3 agents collaborating)
 
 ```
-Claude          Codex           Cursor
-  |               |               |
-  |-- register ---|-- register ---|-- register ------>  Server
-  |               |               |
-  |-- task_create to Codex "unpack driver.sys" -->
-  |               |-- accepted + in_progress -->
-  |               |-- kb_set "driver.sys.oep" "0x14010A3F0" -->
-  |               |-- completed, result pointer in kb -->
-  |-- vote: approve 0.9 -->
-  |               |               |-- vote: needs_work 0.3 -->
-  |-- read tally: approve=0.9 needs_work=0.3 -->
+Claude Codex Cursor
+ | | |
+ |-- register ---|-- register ---|-- register ------> Server
+ | | |
+ |-- task_create to Codex "unpack driver.sys" -->
+ | |-- accepted + in_progress -->
+ | |-- kb_set "driver.sys.oep" "0x14010A3F0" -->
+ | |-- completed, result pointer in kb -->
+ |-- vote: approve 0.9 -->
+ | | |-- vote: needs_work 0.3 -->
+ |-- read tally: approve=0.9 needs_work=0.3 -->
 ```
 
 ## Why it is useful

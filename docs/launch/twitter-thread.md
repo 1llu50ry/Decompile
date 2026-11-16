@@ -3,7 +3,7 @@
 **Tweet 1 (hook — hero shot):**
 > 🧠 Claude, Codex, and Cursor now reverse-engineer binaries together.
 >
-> Introducing mcp-reverse — one MCP server, 111 native tools, 59 RE/debug backends, multi-agent mesh.
+> Introducing decompile — one MCP server, 111 native tools, 59 RE/debug backends, multi-agent mesh.
 >
 > 100% MIT, zero deps for the core.
 >
@@ -42,7 +42,7 @@
 
 **Tweet 7 (link + CTA):**
 > ⭐ MIT, free, open to contrib
-> → https://github.com/1llu50ry/mcp-reverse
+> → https://github.com/1llu50ry/decompile
 >
 > If you've reversed a game binary this year — this is for you.
 >

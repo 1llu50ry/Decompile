@@ -1,0 +1,73 @@
+{
+  "name": "dsh-decompile",
+  "displayName": "decompile for DeepSeek",
+  "version": "6.0.0",
+  "description": "Reverse-engineering MCP for DeepSeek (DSH). 230+ native tools (PE / ELF / Mach-O / DEX / WASM / .NET / ASAR / GGUF / BEAM / Go), 60+ decompiler and debugger backend bridges, 6,000+ skills catalog. Returns structured findings with evidence and unknowns.",
+  "runtime": "mcp",
+  "model": {
+    "family": "deepseek",
+    "preferred": ["deepseek-chat", "deepseek-reasoner", "deepseek-coder"],
+    "minContextTokens": 32000
+  },
+  "author": "decompile maintainers",
+  "license": "MIT",
+  "homepage": "https://github.com/1llu50ry/decompile",
+  "entrypoints": {
+    "serve": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"],
+      "transport": "stdio",
+      "env": {
+        "DSH_ENABLE": "1"
+      }
+    },
+    "analyze": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "analyze"]
+    },
+    "inspect": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "inspect"]
+    }
+  },
+  "mcpServers": {
+    "decompile": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"]
+    }
+  },
+  "install": {
+    "setupCommand": "npx -y decompile@latest setup --npx",
+    "notes": [
+      "DeepSeek does not yet have a standardized MCP config path. Point your DeepSeek client (API wrapper, CLI, or IDE extension) at the `mcpServers.decompile` block above.",
+      "If you use a DeepSeek-compatible OpenAI-style proxy, call `decompile serve` via stdio and bridge tool calls through the proxy's function-calling interface.",
+      "For direct DeepSeek API usage without an MCP client, run `decompile analyze <path>` and feed the JSON findings into your prompt as evidence."
+    ]
+  },
+  "tools": {
+    "exposedCount": "~230",
+    "categories": [
+      "Binary file formats (PE/ELF/Mach-O/DEX/WASM/.NET/ASAR/GGUF/BEAM/Go)",
+      "Decompiler backends (Ghidra/IDA/Binary Ninja/radare2/Hopper)",
+      "Debugger bridges (x64dbg/WinDbg/GDB/LLDB)",
+      "Memory analysis (Cheat Engine, ReClass, Volatility)",
+      "Dynamic instrumentation (Frida, Cheat Engine, Unicorn emulators)",
+      "Skill / agent / plugin / prompt catalog (FTS5 search)"
+    ]
+  },
+  "promptingGuide": {
+    "systemPrompt": "You are a reverse-engineering agent that operates through the decompile MCP server. For every target: (1) identify format with file_identify / file_summary, (2) pick the right native parser + optional decompiler backend, (3) collect evidence with concrete tool calls before stating conclusions, (4) report findings in the shape {claim, evidence[{tool,ref,data}], confidence} with unknowns and limitations called out explicitly.",
+    "fewShotExamples": [
+      {
+        "user": "Analyze /tmp/malware.bin",
+        "assistant": "Running file_identify + pe_parse + pe_imports_json on /tmp/malware.bin, then smart_decompile on the entrypoint. Returning findings with address references and import list; any unknown behavior will be listed as 'unknowns' for the next probe."
+      },
+      {
+        "user": "What anti-debug does this driver use?",
+        "assistant": "Searching the skills catalog with db_search 'anti-debug driver' first, then checking for known IOCTL patterns via pe_imports_json and string scan. Will cite each match with the tool and the line / RVA / signature that produced it."
+      }
+    ]
+  },
+  "workflow": "../docs/workflow-instructions.md",
+  "agents": "../AGENTS.md"
+}

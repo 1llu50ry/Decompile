@@ -1,0 +1,8 @@
+# decompile core — build config.
+#
+# LLVM linker is OPT-IN. To build with clang + lld set the env var
+# `DECOMPILE_USE_LLD=1` and ensure LLVM is on PATH. The CI release
+# workflow sets this on every runner; local dev uses the host default.
+
+[build]
+rustflags = ["-Ccodegen-units=1"]

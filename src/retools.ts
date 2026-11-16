@@ -4,7 +4,7 @@
 // Register MCP tools that let a client:
 //   - list every supported RE/debug MCP backend and the native CLIs
 //     this project knows how to drive (ghidra, ida, x64dbg, cheat
-//     engine, frida, radare2, binary ninja, windbg, hopper, rea,
+//     engine, frida, radare2, binary ninja, windbg, hopper,
 //     vibe-re, superghidra, ...)
 //   - get the exact install command, launch command, and Claude /
 //     Cursor / Codex MCP config snippet for each
@@ -22,6 +22,33 @@ import { join } from "node:path";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
+// --------------------------------------------------------------------
+// Shell-safety guard. Several tools spawn with `shell: true` on Windows
+// so Node resolves .cmd / .bat / PATH, but shell parsing opens an
+// injection sink for any user-supplied string arg. `safeShellArg`
+// rejects a string containing characters the host shell would honor
+// (metacharacters, newlines, NUL). Apply it to every user-supplied
+// string before it reaches a `shell: true` spawn.
+// --------------------------------------------------------------------
+const SHELL_META = /[\s;&|<>$`"'\\!*?(){}[\]\n\r\0]/;
+function safeShellArg(name: string, value: string): void {
+  if (SHELL_META.test(value)) {
+    throw new Error(
+      `rejected arg "${name}" — shell metacharacters not allowed. Got: ${JSON.stringify(value.slice(0, 80))}`,
+    );
+  }
+}
+function safeShellArgs(name: string, values: readonly string[]): void {
+  for (let i = 0; i < values.length; i++) safeShellArg(`${name}[${i}]`, values[i]);
+}
+/** Convert a thrown shell-arg error into a tool response. */
+function shellArgError(e: unknown): { content: { type: "text"; text: string }[]; isError: true } {
+  return {
+    content: [{ type: "text" as const, text: (e as Error).message }],
+    isError: true as const,
+  };
+}
+
 // ------------------------------------------------------------
 // Types
 // ------------------------------------------------------------
@@ -37,7 +64,7 @@ export type ReBackendId =
   | "cheat-engine-mcp"
   | "frida-mcp"
   | "hopper-mcp"
-  | "rea"
+  | "ext-decompile-dispatch"
   | "jadx-mcp"
   | "angr-mcp"
   | "capstone-mcp"
@@ -365,28 +392,27 @@ const BACKENDS: Record<ReBackendId, ReBackend> = {
     tags: ["hopper", "static", "arm", "macos", "ios"],
     notes: "Hopper excels on ARM / Mach-O. Preferred backend for iOS and macOS game work.",
   },
-  "rea": {
-    id: "rea",
-    name: "REA (Reverse Engineer Anything)",
+  "ext-decompile-dispatch": {
+    id: "ext-decompile-dispatch",
+    name: "External decompile dispatcher",
     kind: "both",
     os: ["windows", "linux", "macos"],
-    requires: "Node.js 18+. For native targets: an existing Hopper, Ghidra, or IDA install.",
+    requires: "Node.js 22+. For native targets: an existing Hopper, Ghidra, IDA, or Binary Ninja install.",
     install: [
-      "npx rea-agents setup   # interactive setup",
-      "npm install -g rea-agents",
+      "Any node-based MCP decompile dispatcher that speaks stdio.",
     ],
     launch: {
-      cmd: "rea",
-      args: ["mcp"],
+      cmd: "node",
+      args: ["dispatch.js"],
     },
     mcpConfig: {
-      rea: {
-        command: "npx",
-        args: ["-y", "rea-agents@latest", "mcp"],
+      "ext-decompile-dispatch": {
+        command: "node",
+        args: ["dispatch.js"],
       },
     },
     tags: ["cross-tool", "electron", "javascript", "dotnet", "native"],
-    notes: "Native + JavaScript/Electron + .NET + websites in one MCP. Dispatches to the configured backend (Hopper/Ghidra/IDA).",
+    notes: "Native + JavaScript/Electron + .NET in one MCP dispatcher. Picks a configured backend per target type.",
   },
   "jadx-mcp": {
     id: "jadx-mcp",
@@ -1286,7 +1312,7 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
   // --------------------------------------------------------
   server.tool(
     "list_re_backends",
-    "List every RE / debug MCP backend this project knows how to drive (Ghidra, IDA, Binary Ninja, radare2, x64dbg, WinDbg, Cheat Engine, Frida, Hopper, REA, Vibe-RE, JADX, angr, Capstone). Returns id, kind (static/dynamic/both), supported OS, install hints, launch command, and whether the backend is currently running.",
+    "List every RE / debug MCP backend this project knows how to drive (Ghidra, IDA, Binary Ninja, radare2, x64dbg, WinDbg, Cheat Engine, Frida, Hopper, JADX, angr, Capstone, and more). Returns id, kind (static/dynamic/both), supported OS, install hints, launch command, and whether the backend is currently running.",
     {
       kind: z.enum(["static", "dynamic", "both"]).optional().describe("Filter by backend kind."),
       os: z.enum(["windows", "linux", "macos"]).optional().describe("Filter by host OS."),
@@ -1413,6 +1439,8 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
         return { content: [{ type: "text" as const, text: `cwd does not exist: ${cwd}` }], isError: true as const };
       }
 
+      try { safeShellArgs("extraArgs", extraArgs); }
+      catch (e) { return shellArgError(e); }
       const mergedEnv = { ...process.env, ...b.launch.env, ...env };
       const child = spawn(b.launch.cmd, [...b.launch.args, ...extraArgs], {
         cwd,
@@ -1697,6 +1725,13 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
       cwd: z.string().optional().describe("Override working directory. Defaults to tools/vendor/vibe-re."),
     },
     async ({ module: modulePath, args, cwd }: { module: string; args?: string[]; cwd?: string }) => {
+      // Python -m needs a dotted module name; restrict to that alphabet
+      // (plus the -I isolated-mode flag already pinned below).
+      if (!/^[A-Za-z_][A-Za-z0-9_.]{0,127}$/.test(modulePath)) {
+        return { content: [{ type: "text" as const, text: `rejected module: must match ^[A-Za-z_][A-Za-z0-9_.]*$. Got: ${JSON.stringify(modulePath.slice(0, 80))}` }], isError: true as const };
+      }
+      try { safeShellArgs("args", args ?? []); }
+      catch (e) { return shellArgError(e); }
       const workdir = cwd ?? join(projectRoot, "tools", "vendor", "vibe-re");
       if (!(await pathExists(workdir))) {
         return { content: [{ type: "text" as const, text: `vibe-re not vendored at ${workdir}. Install via tools/vendor/vibe-re.` }], isError: true as const };
@@ -1736,6 +1771,11 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
       extraArgs: z.array(z.string()).default([]).describe("Extra args to idat (e.g. ['-A', '-c'])."),
     },
     async ({ binary, script, bits, extraArgs }: { binary: string; script: string; bits: "32" | "64"; extraArgs?: string[] }) => {
+      try {
+        safeShellArg("binary", binary);
+        safeShellArg("script", script);
+        safeShellArgs("extraArgs", extraArgs ?? []);
+      } catch (e) { return shellArgError(e); }
       const bin = bits === "64" ? "idat64" : "idat";
       return await new Promise((resolve) => {
         const child = spawn(bin, ["-A", `-S${script}`, ...(extraArgs ?? []), binary], {
@@ -1844,6 +1884,7 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
       bits: z.enum(["32", "64"]).default("64"),
     },
     async ({ binary, mode, bits }: { binary: string; mode: "pdb" | "pdb-labels" | "dumpinfo" | "lib"; bits: "32" | "64" }) => {
+      try { safeShellArg("binary", binary); } catch (e) { return shellArgError(e); }
       const bin = bits === "64" ? "idat64" : "idat";
       const scratch = join(projectRoot, ".fakepdb-scripts");
       const { mkdir, writeFile } = await import("node:fs/promises");
@@ -1888,6 +1929,12 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
       extraArgs: z.array(z.string()).default([]),
     },
     async ({ binary, script, project, ghidraRoot, extraArgs }: { binary: string; script: string; project: string; ghidraRoot?: string; extraArgs?: string[] }) => {
+      try {
+        safeShellArg("binary", binary);
+        safeShellArg("script", script);
+        safeShellArg("project", project);
+        safeShellArgs("extraArgs", extraArgs ?? []);
+      } catch (e) { return shellArgError(e); }
       const root = ghidraRoot ?? process.env.GHIDRA_INSTALL_DIR;
       if (!root) return { content: [{ type: "text" as const, text: "GHIDRA_INSTALL_DIR not set and ghidraRoot not provided." }], isError: true as const };
       const headless = process.platform === "win32" ? "analyzeHeadless.bat" : "analyzeHeadless";

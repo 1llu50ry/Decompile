@@ -1,0 +1,62 @@
+{
+  "$schema": "https://cursor.sh/schemas/plugin.json",
+  "name": "decompile",
+  "displayName": "decompile",
+  "version": "6.0.0",
+  "description": "Reverse-engineering MCP for Cursor: 230+ native tools (PE / ELF / Mach-O / DEX / WASM / .NET / ASAR / GGUF / BEAM / Go), 60+ decompiler and debugger backend bridges, 6,000+ skills catalog, structured findings with evidence and unknowns.",
+  "author": "decompile maintainers",
+  "license": "MIT",
+  "homepage": "https://github.com/1llu50ry/decompile",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1llu50ry/decompile.git"
+  },
+  "categories": [
+    "Reverse Engineering",
+    "Binary Analysis",
+    "Security"
+  ],
+  "keywords": [
+    "mcp",
+    "reverse-engineering",
+    "binary-analysis",
+    "decompiler",
+    "disassembly",
+    "debugger",
+    "instrumentation",
+    "memory-analysis"
+  ],
+  "mcpServers": {
+    "decompile": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"],
+      "transport": "stdio"
+    }
+  },
+  "cursorMcpConfig": {
+    "decompile": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"]
+    }
+  },
+  "install": {
+    "setupCommand": "npx -y decompile@latest setup --client cursor",
+    "uninstallCommand": "npx -y decompile@latest uninstall --client cursor",
+    "configPath": "~/.cursor/mcp.json"
+  },
+  "activation": [
+    "onMcpServerStart:decompile"
+  ],
+  "contributes": {
+    "commands": [
+      { "command": "decompile.analyze", "title": "decompile: Analyze file" },
+      { "command": "decompile.inspect", "title": "decompile: Inspect (shallow)" },
+      { "command": "decompile.capabilities", "title": "decompile: Show capabilities" },
+      { "command": "decompile.doctor", "title": "decompile: Run doctor" },
+      { "command": "decompile.providers", "title": "decompile: List RE backends" },
+      { "command": "decompile.guidance", "title": "decompile: Workflow instructions" }
+    ]
+  },
+  "workflow": "../docs/workflow-instructions.md",
+  "agents": "../AGENTS.md"
+}

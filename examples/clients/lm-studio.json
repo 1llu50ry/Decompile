@@ -1,7 +1,7 @@
 {
-  "name": "mcp-reverse",
+  "name": "decompile",
   "command": "node",
-  "args": ["/path/to/mcp-reverse/dist/index.js"],
+  "args": ["/path/to/decompile/dist/index.js"],
   "env": {
     "MCP_TRANSPORT": "stdio",
     "MCP_FS_ALLOW": "/samples:/reverse"

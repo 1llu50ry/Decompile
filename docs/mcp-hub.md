@@ -25,17 +25,17 @@ Our server acts as a **CLIENT** to other MCP servers (`ghidra-mcp`, `ida-pro-mcp
 ```jsonc
 // agent A connects us to IDA + Ghidra
 {"method":"tools/call","params":{"name":"hub_connect","arguments":{
-  "id":"ida",   "transport":"stdio","cmd":"ida-pro-mcp" } } }
+ "id":"ida", "transport":"stdio","cmd":"ida-pro-mcp" } } }
 {"method":"tools/call","params":{"name":"hub_connect","arguments":{
-  "id":"ghidra","transport":"http","url":"http://127.0.0.1:8765/mcp" } } }
+ "id":"ghidra","transport":"http","url":"http://127.0.0.1:8765/mcp" } } }
 
 // now any agent can call either
 {"method":"tools/call","params":{"name":"hub_call","arguments":{
-  "id":"ida","tool":"decompile","args":{"address":"0x401000"} } } }
+ "id":"ida","tool":"decompile","args":{"address":"0x401000"} } } }
 
 // or fan it out
 {"method":"tools/call","params":{"name":"hub_consensus_call","arguments":{
-  "matcher":"decompile","args":{"address":"0x401000"} } } }
+ "matcher":"decompile","args":{"address":"0x401000"} } } }
 ```
 
 ## Shutdown

@@ -13,10 +13,10 @@ iOS and Android RE converge on the same primitives: ARM/AArch64 decomp, Frida/Zy
 ## Agent flow
 
 ```
-Claude  → apk_scan game.apk
-Codex   → dex_parse classes.dex → jadx-mcp
-Cursor  → frida-mcp → attach + hook
-Claude  → mesh_task_vote on Cursor's hook result
+Claude → apk_scan game.apk
+Codex → dex_parse classes.dex → jadx-mcp
+Cursor → frida-mcp → attach + hook
+Claude → mesh_task_vote on Cursor's hook result
 ```
 
 ## Skills to add

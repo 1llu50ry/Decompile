@@ -4,91 +4,91 @@ Four concentric rings. Everything downstream is strict addition over what's insi
 
 ```mermaid
 graph TB
-    subgraph "MCP clients"
-        CC[Claude Code]
-        CX[Codex / ChatGPT]
-        CS[Cursor]
-        CP[Copilot CLI]
-    end
+ subgraph "MCP clients"
+ CC[Claude Code]
+ CX[Codex / ChatGPT]
+ CS[Cursor]
+ CP[Copilot CLI]
+ end
 
-    subgraph "Transports"
-        STDIO[stdio]
-        HTTP[streamable HTTP :7777/mcp]
-        H[/healthz/]
-        M[/metrics/]
-    end
+ subgraph "Transports"
+ STDIO[stdio]
+ HTTP[streamable HTTP :7777/mcp]
+ H[/healthz/]
+ M[/metrics/]
+ end
 
-    subgraph "Server (src/)"
-        direction LR
-        subgraph "Native parsers (zero-dep)"
-            NR[native-re<br/>PE/AoB/strings/entropy/hash/signature]
-            NF[native-formats<br/>ELF/Mach-O/DEX/WASM]
-            NA[native-advanced<br/>Minidump/PDB70/Rich/demangle/Unity/UE/NSO]
-            NC[native-containers<br/>ZIP/APK/.NET/catalog]
-            CT[composite-tools<br/>analyze_binary/pe_debug_dir/compare_binaries]
-        end
+ subgraph "Server (src/)"
+ direction LR
+ subgraph "Native parsers (zero-dep)"
+ NR[native-re<br/>PE/AoB/strings/entropy/hash/signature]
+ NF[native-formats<br/>ELF/Mach-O/DEX/WASM]
+ NA[native-advanced<br/>Minidump/PDB70/Rich/demangle/Unity/UE/NSO]
+ NC[native-containers<br/>ZIP/APK/.NET/catalog]
+ CT[composite-tools<br/>analyze_binary/pe_debug_dir/compare_binaries]
+ end
 
-        subgraph "Knowledge"
-            IDX[in-memory skill index<br/>2 min TTL]
-            BM25[BM25 search<br/>10 min TTL]
-            RES[Dynamic resources<br/>gamehacking://.../]
-        end
+ subgraph "Knowledge"
+ IDX[in-memory skill index<br/>2 min TTL]
+ BM25[BM25 search<br/>10 min TTL]
+ RES[Dynamic resources<br/>gamehacking://.../]
+ end
 
-        subgraph "Workflow"
-            WF[workflow-tools<br/>offset_diff/offset_merge/ac_risk_report]
-            MT[meta-tools<br/>wiki_link_check/training_jsonl_export/symsrv_download/pattern_mine]
-        end
+ subgraph "Workflow"
+ WF[workflow-tools<br/>offset_diff/offset_merge/ac_risk_report]
+ MT[meta-tools<br/>wiki_link_check/training_jsonl_export/symsrv_download/pattern_mine]
+ end
 
-        subgraph "Platform"
-            FS[fs-sandbox<br/>MCP_FS_ALLOW]
-            AR[audit-rate<br/>JSONL log + token bucket]
-            AM[agent-mesh<br/>DM/channels/tasks/votes/KB/locks]
-            HUB[mcp-hub<br/>hub_connect/hub_call/smart_decompile]
-        end
+ subgraph "Platform"
+ FS[fs-sandbox<br/>MCP_FS_ALLOW]
+ AR[audit-rate<br/>JSONL log + token bucket]
+ AM[agent-mesh<br/>DM/channels/tasks/votes/KB/locks]
+ HUB[mcp-hub<br/>hub_connect/hub_call/smart_decompile]
+ end
 
-        RE[retools<br/>59 RE/debug backend catalog + launcher]
-    end
+ RE[retools<br/>59 RE/debug backend catalog + launcher]
+ end
 
-    subgraph "External MCP backends (optional)"
-        G[Ghidra · SuperGhidra · Ghidrathon]
-        I[IDA · ida-pro-mcp · Hex-Rays MCP]
-        B[Binja · radare2 · RetDec · Snowman]
-        D[x64dbg · WinDbg · GDB · LLDB · pwndbg · GEF]
-        X[Cheat Engine · Frida · Hopper · REA]
-        F[AFL++ · honggfuzz · LibAFL · WinAFL]
-        P[PCILeech · Memflow · Volatility · YARA · angr · Unicorn · Qiling · unidbg]
-        N[Wireshark · mitmproxy · Burp · CDP]
-        R[Scylla · dnSpy · ReClass.NET · dotPeek]
-    end
+ subgraph "External MCP backends (optional)"
+ G[Ghidra · SuperGhidra · Ghidrathon]
+ I[IDA · ida-pro-mcp · Hex-Rays MCP]
+ B[Binja · radare2 · RetDec · Snowman]
+ D[x64dbg · WinDbg · GDB · LLDB · pwndbg · GEF]
+ X[Cheat Engine · Frida · Hopper · ]
+ F[AFL++ · honggfuzz · LibAFL · WinAFL]
+ P[PCILeech · Memflow · Volatility · YARA · angr · Unicorn · Qiling · unidbg]
+ N[Wireshark · mitmproxy · Burp · CDP]
+ R[Scylla · dnSpy · ReClass.NET · dotPeek]
+ end
 
-    CC & CX & CS & CP --> STDIO
-    CC & CX & CS & CP -.-> HTTP
-    HTTP --> H
-    HTTP --> M
+ CC & CX & CS & CP --> STDIO
+ CC & CX & CS & CP -.-> HTTP
+ HTTP --> H
+ HTTP --> M
 
-    STDIO --> IDX
-    STDIO --> BM25
-    STDIO --> AM
-    STDIO --> HUB
-    HTTP --> AM
-    HTTP --> HUB
+ STDIO --> IDX
+ STDIO --> BM25
+ STDIO --> AM
+ STDIO --> HUB
+ HTTP --> AM
+ HTTP --> HUB
 
-    NR -.calls.-> FS
-    NF -.calls.-> FS
-    NA -.calls.-> FS
-    NC -.calls.-> FS
-    CT -.calls.-> NR
-    CT -.calls.-> NF
-    CT -.calls.-> NA
-    MT -.calls.-> FS
+ NR -.calls.-> FS
+ NF -.calls.-> FS
+ NA -.calls.-> FS
+ NC -.calls.-> FS
+ CT -.calls.-> NR
+ CT -.calls.-> NF
+ CT -.calls.-> NA
+ MT -.calls.-> FS
 
-    HUB -->|MCP client| G & I & B & D & X & F & P & N & R
+ HUB -->|MCP client| G & I & B & D & X & F & P & N & R
 
-    RE -.catalog.-> G
-    RE -.catalog.-> I
-    RE -.catalog.-> B
-    RE -.catalog.-> D
-    RE -.catalog.-> X
+ RE -.catalog.-> G
+ RE -.catalog.-> I
+ RE -.catalog.-> B
+ RE -.catalog.-> D
+ RE -.catalog.-> X
 ```
 
 ## Modules
@@ -130,7 +130,7 @@ graph TB
 ## Testing
 
 ```bash
-npm test   # 20+ node:test cases
+npm test # 20+ node:test cases
 ```
 
 - Native parser unit tests under `tests/native-re.test.mjs`, `tests/native-formats.test.mjs`.

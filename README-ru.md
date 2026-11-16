@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎮 mcp-reverse
+# 🎮 decompile
 
 ### MCP-сервер, превращающий Claude, Codex и Cursor в команду reverse-engineering.
 
@@ -32,19 +32,19 @@
 ## Быстрый старт
 
 ```bash
-git clone https://github.com/1llu50ry/mcp-reverse
-cd mcp-reverse
+git clone https://github.com/1llu50ry/decompile
+cd decompile
 npm install && npx tsc
-npm test            # 20/20 должны пройти
+npm test # 20/20 должны пройти
 
-./bin/mcp-reverse.mjs stats
-./bin/mcp-reverse.mjs search battleye
-./bin/mcp-reverse.mjs tools
+./bin/decompile.mjs stats
+./bin/decompile.mjs search battleye
+./bin/decompile.mjs tools
 ```
 
 Для Claude Code / Codex / Cursor добавь в MCP-конфиг:
 ```json
-{ "mcp-reverse": { "command": "node", "args": ["/path/to/dist/index.js"] } }
+{ "decompile": { "command": "node", "args": ["/path/to/dist/index.js"] } }
 ```
 
 Или через Docker:

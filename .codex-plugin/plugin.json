@@ -1,0 +1,68 @@
+{
+  "name": "decompile",
+  "displayName": "decompile",
+  "version": "6.0.0",
+  "description": "Reverse-engineering MCP for OpenAI Codex / Codex CLI: native PE/ELF/Mach-O/.NET/WASM parsers, decompiler and debugger bridges, instrumentation, and a 6,000+ skills catalog.",
+  "author": "decompile maintainers",
+  "license": "MIT",
+  "homepage": "https://github.com/1llu50ry/decompile",
+  "entrypoints": {
+    "mcp": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest", "serve"]
+    },
+    "cli": {
+      "command": "npx",
+      "args": ["-y", "decompile@latest"]
+    }
+  },
+  "codexConfig": {
+    "mcp": {
+      "servers": {
+        "decompile": {
+          "command": "npx",
+          "args": ["-y", "decompile@latest", "serve"]
+        }
+      }
+    }
+  },
+  "codexTomlSnippet": "[mcp.servers.decompile]\ncommand = \"npx\"\nargs = [\"-y\", \"decompile@latest\", \"serve\"]\n",
+  "install": {
+    "setupCommand": "npx -y decompile@latest setup --client codex",
+    "uninstallCommand": "npx -y decompile@latest uninstall --client codex"
+  },
+  "commands": [
+    {
+      "name": "analyze",
+      "description": "Auto-detect a file format and return a structured findings JSON.",
+      "example": "decompile analyze path/to/binary"
+    },
+    {
+      "name": "inspect",
+      "description": "Shallow analyze — fast metadata + unknowns.",
+      "example": "decompile inspect path/to/binary"
+    },
+    {
+      "name": "capabilities",
+      "description": "List every MCP tool and catalog item.",
+      "example": "decompile capabilities"
+    },
+    {
+      "name": "doctor",
+      "description": "Audit runtime, DB, backend bridges, and agent registrations.",
+      "example": "decompile doctor"
+    },
+    {
+      "name": "providers",
+      "description": "List configured RE backends.",
+      "example": "decompile providers"
+    },
+    {
+      "name": "guidance",
+      "description": "Print the agent workflow-instructions document.",
+      "example": "decompile guidance"
+    }
+  ],
+  "workflow": "docs/workflow-instructions.md",
+  "agents": "AGENTS.md"
+}

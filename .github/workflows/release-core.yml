@@ -1,0 +1,179 @@
+name: release-core
+
+# Cross-platform release pipeline for the Rust `decompile` core binary.
+# Builds with LLVM (clang / lld) on every runner, packages the binary
+# plus the Node CLI into a per-OS archive, and uploads everything to the
+# tag's GitHub release.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to create (e.g. v6.0.0)'
+        required: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: x86_64-apple-darwin
+            os: macos-14
+            ext: ''
+            pack: tar
+          - target: aarch64-apple-darwin
+            os: macos-14
+            ext: ''
+            pack: tar
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            ext: '.exe'
+            pack: zip
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            ext: '.exe'
+            pack: zip
+            cross: true
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: install LLVM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm
+
+      - name: install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install llvm lld
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
+
+      - name: install LLVM (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install llvm --yes --no-progress
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: install Rust target
+        run: rustup target add ${{ matrix.target }}
+        shell: bash
+
+      - name: enable LLVM linker config
+        run: cp core/.cargo/config.lld.toml core/.cargo/config.toml
+        shell: bash
+
+      - name: install cross (for cross-target)
+        if: matrix.cross
+        run: cargo install cross --locked
+
+      - name: build (native)
+        if: ${{ !matrix.cross }}
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: core
+        shell: bash
+
+      - name: build (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+        working-directory: core
+        shell: bash
+
+      - name: stage archive contents
+        shell: bash
+        run: |
+          mkdir -p stage/decompile
+          cp core/target/${{ matrix.target }}/release/decompile${{ matrix.ext }} stage/decompile/
+          cp bin/decompile.mjs bin/mcp-reverse.mjs stage/decompile/
+          cp README.md LICENSE AGENTS.md stage/decompile/
+          cp -r docs stage/decompile/
+          mkdir -p stage/decompile/.claude-plugin
+          cp -r .claude-plugin stage/decompile/
+          mkdir -p stage/decompile/.codex-plugin
+          cp -r .codex-plugin stage/decompile/
+          mkdir -p stage/decompile/.cursor-plugin
+          cp -r .cursor-plugin stage/decompile/
+          mkdir -p stage/decompile/dsh-decompile-plugin
+          cp -r dsh-decompile-plugin stage/decompile/
+
+      - name: pack tar
+        if: matrix.pack == 'tar'
+        shell: bash
+        run: |
+          cd stage
+          tar -czf ../decompile-${{ matrix.target }}.tar.gz decompile/*
+          cd ..
+          sha256sum decompile-${{ matrix.target }}.tar.gz > decompile-${{ matrix.target }}.tar.gz.sha256
+
+      - name: pack zip
+        if: matrix.pack == 'zip'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path stage/decompile/* -DestinationPath decompile-${{ matrix.target }}.zip -Force
+          (Get-FileHash decompile-${{ matrix.target }}.zip -Algorithm SHA256).Hash + "  decompile-${{ matrix.target }}.zip" | Out-File -FilePath decompile-${{ matrix.target }}.zip.sha256 -Encoding ascii
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decompile-${{ matrix.target }}
+          path: |
+            decompile-${{ matrix.target }}.tar.gz
+            decompile-${{ matrix.target }}.tar.gz.sha256
+            decompile-${{ matrix.target }}.zip
+            decompile-${{ matrix.target }}.zip.sha256
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: flatten artifacts
+        run: |
+          mkdir -p flat
+          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) -exec cp {} flat/ \;
+          ls -lh flat
+
+      - name: resolve tag
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: flat/*

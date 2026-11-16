@@ -13,9 +13,9 @@ cat > skills/your-skill-name/SKILL.md <<'EOF'
 name: your-skill-name
 description: "One sentence a search engine should return your skill on."
 metadata:
-  type: tool-reference
-  source: curated
-  topics: [tag1, tag2, tag3]
+ type: tool-reference
+ source: curated
+ topics: [tag1, tag2, tag3]
 ---
 
 # Title
@@ -34,7 +34,7 @@ metadata:
 EOF
 
 npm run build
-./bin/mcp-reverse.mjs search your-skill-name   # confirm it shows up
+./bin/decompile.mjs search your-skill-name # confirm it shows up
 ```
 
 **Good-first-issue skills we want:**
@@ -71,16 +71,16 @@ Guidelines:
 ```ts
 // src/retools.ts
 "your-mcp-id": {
-  id: "your-mcp-id",
-  name: "Your tool MCP",
-  kind: "static" | "dynamic" | "both",
-  os: ["windows", "linux", "macos"],
-  requires: "the one-line prereq",
-  install: ["pip install your-mcp"],
-  launch: { cmd: "your-mcp", args: [], http: { port: 7777 } },
-  mcpConfig: { "your-mcp": { command: "your-mcp", args: [] } },
-  tags: ["your", "tags"],
-  notes: "what makes this unique vs ida-pro-mcp / superghidra-mcp",
+ id: "your-mcp-id",
+ name: "Your tool MCP",
+ kind: "static" | "dynamic" | "both",
+ os: ["windows", "linux", "macos"],
+ requires: "the one-line prereq",
+ install: ["pip install your-mcp"],
+ launch: { cmd: "your-mcp", args: [], http: { port: 7777 } },
+ mcpConfig: { "your-mcp": { command: "your-mcp", args: [] } },
+ tags: ["your", "tags"],
+ notes: "what makes this unique vs ida-pro-mcp / superghidra-mcp",
 },
 ```
 
@@ -90,10 +90,10 @@ Add it to the id union at the top of `src/retools.ts`.
 
 ```bash
 npm install
-npx tsc           # typecheck
-npm test          # 20+ node:test cases
-./bin/mcp-reverse.mjs stats
-./bin/mcp-reverse.mjs tools      # inventory
+npx tsc # typecheck
+npm test # 20+ node:test cases
+./bin/decompile.mjs stats
+./bin/decompile.mjs tools # inventory
 ```
 
 ## Code style

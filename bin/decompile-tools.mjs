@@ -70,7 +70,21 @@ function run(cmd, args, opts = {}) {
   if (r.status !== 0) throw new Error(`${cmd} ${args.join(" ")} exited ${r.status}${opts.quiet ? `: ${(r.stderr || r.stdout || "").trim().split("\n").slice(-3).join(" | ")}` : ""}`);
   return r.stdout ?? "";
 }
-const has = (cmd) => spawnSync(OS === "windows" ? "where" : "sh", OS === "windows" ? [cmd] : ["-c", `command -v ${cmd}`], { stdio: "ignore" }).status === 0;
+// Is `cmd` on PATH? A plain directory lookup — no shell, no subprocess, so a
+// command name can never be interpreted (CodeQL js/command-line-injection).
+function has(cmd) {
+  if (!/^[A-Za-z0-9._+-]+$/.test(cmd)) return false;
+  const exts = OS === "windows" ? (process.env.PATHEXT || ".EXE;.CMD;.BAT;.COM").split(";").filter(Boolean) : [""];
+  const pathKey = Object.keys(process.env).find((k) => k.toUpperCase() === "PATH") ?? "PATH";
+  for (const dir of (process.env[pathKey] || "").split(delimiter)) {
+    if (!dir) continue;
+    for (const ext of exts) {
+      const p = join(dir, cmd + ext.toLowerCase());
+      try { if (statSync(p).isFile()) return true; } catch { /* not here */ }
+    }
+  }
+  return false;
+}
 
 async function getJson(url) {
   const headers = { ...UA };
@@ -275,7 +289,10 @@ export const COMPONENTS = [
       const src = await fetchAndUnpack("radare2-src", a);
       const prefix = join(TOOLS_HOME, "radare2");
       say("radare2: building from source (a few minutes)");
-      run("sh", ["-c", `./configure --prefix='${prefix}' >/dev/null && make -j4 >/dev/null && make install >/dev/null`], { cwd: src, quiet: true });
+      // Argument arrays, no shell: the prefix comes from DECOMPILE_TOOLS_HOME.
+      run("./configure", [`--prefix=${prefix}`], { cwd: src, quiet: true });
+      run("make", ["-j4"], { cwd: src, quiet: true });
+      run("make", ["install"], { cwd: src, quiet: true });
       rmSync(src, { recursive: true, force: true });
       return { version: a.version };
     },

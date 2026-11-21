@@ -633,12 +633,15 @@ async function cmdDoctor() {
     const p = clientConfigPath(client);
     if (!p) continue;
     try {
-      await stat(p);
+      // Read atomically — if the file is absent the readFile throws
+      // ENOENT, which is cheaper and safer than a prior stat().
       if (p.endsWith(".toml")) {
         const t = await readFile(p, "utf8");
         add(`${client} registered`, t.includes(`[mcp.servers.${SERVER_KEY}]`), p);
       } else {
-        const cfg = await readJsonSafe(p);
+        const t = await readFile(p, "utf8");
+        let cfg = {};
+        try { cfg = JSON.parse(t); } catch { /* keep {} */ }
         add(`${client} registered`, Boolean(cfg.mcpServers?.[SERVER_KEY]), p);
       }
     } catch {
@@ -684,20 +687,36 @@ async function cmdProviders() {
 // with evidence + unknowns + limitations.
 async function cmdAnalyze(path, { shallow = false } = {}) {
   if (!path) { console.error("usage: decompile analyze <path>"); process.exit(1); }
-  const { statSync } = await import("node:fs");
-  let st;
-  try { st = statSync(path); } catch { console.error(`not found: ${path}`); process.exit(1); }
-  const out = { target: path, kind: null, findings: [], unknowns: [], limitations: [] };
-
+  const { openSync, fstatSync, readSync, closeSync } = await import("node:fs");
+  // Open a handle first; fstat + read on the same handle are atomic
+  // against subsequent inode changes (no TOCTOU window between the
+  // "is it a dir?" check and the read).
+  let fd;
+  try { fd = openSync(path, "r"); }
+  catch (e) {
+    if (e.code === "EISDIR") {
+      // POSIX reports EISDIR on `open(dir, O_RDONLY)`; Windows doesn't,
+      // so we also handle the directory case after fstat below.
+      const out = { target: path, kind: "directory", findings: [{ claim: "target is a directory", evidence: [{ tool: "fs.open", ref: path, data: "EISDIR" }], confidence: "high" }], unknowns: ["application type not identified — run `analyze` on a specific binary inside"], limitations: [] };
+      return done(out);
+    }
+    console.error(`not found: ${path}`);
+    process.exit(1);
+  }
+  const st = fstatSync(fd);
   if (st.isDirectory()) {
-    out.kind = "directory";
-    out.findings.push({ claim: "target is a directory", evidence: [{ tool: "fs.statSync", ref: path, data: `size=${st.size}` }], confidence: "high" });
-    out.unknowns.push("application type not identified — run `analyze` on a specific binary inside");
+    closeSync(fd);
+    const out = { target: path, kind: "directory", findings: [{ claim: "target is a directory", evidence: [{ tool: "fs.fstat", ref: path, data: "isDirectory" }], confidence: "high" }], unknowns: ["application type not identified — run `analyze` on a specific binary inside"], limitations: [] };
     return done(out);
   }
+  const out = { target: path, kind: null, findings: [], unknowns: [], limitations: [] };
 
-  const { readFileSync } = await import("node:fs");
-  const buf = readFileSync(path);
+  // Read the whole file off the open fd so it's the same inode we
+  // fstat'd above. Bounded at 16 MiB — plenty for format detection.
+  const MAX = Math.min(st.size, 16 * 1024 * 1024);
+  const buf = Buffer.alloc(MAX);
+  readSync(fd, buf, 0, MAX, 0);
+  closeSync(fd);
   const head = buf.subarray(0, 32);
 
   // PE

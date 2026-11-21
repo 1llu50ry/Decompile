@@ -35,7 +35,11 @@ export function startMockBridge({ host = "ghidra", port = 0 } = {}) {
           const result = fn(payload.args || {});
           send(res, 200, { ok: true, result });
         } catch (e) {
-          send(res, 500, { ok: false, error: String(e?.message ?? e) });
+          // Log the real error server-side; return a sanitized one-line
+          // message to the client so stack frames can't escape.
+          console.error("[mock-bridge]", e);
+          const msg = String(e?.message ?? e).split(/\r?\n/)[0].slice(0, 200);
+          send(res, 500, { ok: false, error: msg });
         }
       });
       return;

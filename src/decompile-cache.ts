@@ -124,10 +124,12 @@ export class DecompileCache {
       for (const f of await readdir(sub).catch(() => [])) {
         const p = join(sub, f);
         try {
-          const st = await stat(p);
+          // Read atomically — derive size from the returned buffer so
+          // there's no stat/read TOCTOU window. If the file was replaced
+          // mid-walk, we still get a consistent (content, size) pair.
           const text = await readFile(p, "utf8");
           const e: CacheEntry<unknown> = JSON.parse(text);
-          victims.push({ path: p, last_hit: e.last_hit ?? e.created_at, size: st.size });
+          victims.push({ path: p, last_hit: e.last_hit ?? e.created_at, size: Buffer.byteLength(text, "utf8") });
         } catch {}
       }
     }

@@ -37,12 +37,12 @@ function Pick([string[]]$candidates) {
 }
 function Copy-Plugin($src, $dstDir, $hostName) {
   if (-not (Test-Path $src)) { Say "  SKIP (source missing): $src" "DarkYellow"; return }
-  if (-not $Apply) { Say "  [dry] copy $src → $dstDir" "DarkCyan"; return }
+  if (-not $Apply) { Say "  [dry] copy $src -> $dstDir" "DarkCyan"; return }
   if (-not (Test-Path $dstDir)) { New-Item -ItemType Directory -Path $dstDir -Force | Out-Null }
   $leaf = Split-Path -Leaf $src
   $target = Join-Path $dstDir $leaf
   Copy-Item -Path $src -Destination $target -Force -Recurse
-  Say "  ✓ installed $hostName plugin to $target" "Green"
+  Say "  ok installed $hostName plugin to $target" "Green"
 }
 
 function Should($name) { if ($Only.Count -eq 0) { return $true } ; return ($Only -contains $name) }
@@ -61,12 +61,12 @@ if (Should "ida") {
   $idaUsr = Pick @(
     "$env:APPDATA\Hex-Rays\IDA Pro"
   )
-  if (-not $idaUsr) { Say "  no IDAUSR found at %APPDATA%\Hex-Rays\IDA Pro — IDA creates it on first launch" "DarkYellow" }
+  if (-not $idaUsr) { Say "  no IDAUSR found at %APPDATA%\Hex-Rays\IDA Pro - IDA creates it on first launch" "DarkYellow" }
   else {
     Say "  IDAUSR: $idaUsr"
     Copy-Plugin "$Here\ida-pro\mcp_bridge.py" "$idaUsr\plugins" "IDA"
   }
-  if ($idaRoot) { Say "  (also detected IDA root: $idaRoot — plugin goes in IDAUSR, not root)" "DarkGray" }
+  if ($idaRoot) { Say "  (also detected IDA root: $idaRoot - plugin goes in IDAUSR, not root)" "DarkGray" }
 }
 
 # -------- Ghidra --------
@@ -80,7 +80,7 @@ if (Should "ghidra") {
   if ($ghidraUser) {
     Say "  Ghidra user: $ghidraUser"
     Copy-Plugin "$Here\ghidra\mcp_bridge.py" "$ghidraUser\scripts" "Ghidra"
-  } else { Say "  no Ghidra user dir — set `$env:GHIDRA_USER" "DarkYellow" }
+  } else { Say "  no Ghidra user dir - set `$env:GHIDRA_USER" "DarkYellow" }
 }
 
 # -------- Binary Ninja --------
@@ -93,7 +93,7 @@ if (Should "binja") {
   if ($binja) {
     Say "  Binja user: $binja"
     Copy-Plugin "$Here\binaryninja\mcp_bridge.py" "$binja\plugins" "Binary Ninja"
-  } else { Say "  no Binja user dir — set `$env:BINJA_PATH" "DarkYellow" }
+  } else { Say "  no Binja user dir - set `$env:BINJA_PATH" "DarkYellow" }
 }
 
 # -------- Cheat Engine --------
@@ -109,7 +109,7 @@ if (Should "ce") {
   if ($ce) {
     Say "  Cheat Engine: $ce"
     Copy-Plugin "$Here\cheat-engine\mcp_bridge.lua" "$ce\autorun" "Cheat Engine"
-  } else { Say "  CE not found — set `$env:CE_PATH" "DarkYellow" }
+  } else { Say "  CE not found - set `$env:CE_PATH" "DarkYellow" }
 }
 
 # -------- ReClass.NET --------
@@ -151,15 +151,20 @@ if (Should "ilspy") {
 # -------- Frida (standalone python bridge) --------
 if (Should "frida") {
   Say "`n[frida] checking python + frida module..." "Cyan"
-  $py = Pick @((Get-Command python -ErrorAction SilentlyContinue).Source, (Get-Command python3 -ErrorAction SilentlyContinue).Source)
-  if (-not $py) { Say "  python not found — install Python 3.9+" "DarkYellow" }
+  # Prefer the managed env from `decompile retools install` (it ships frida).
+  $py = Pick @($env:MCP_PYTHON, (Get-Command python -ErrorAction SilentlyContinue).Source, (Get-Command python3 -ErrorAction SilentlyContinue).Source)
+  if (-not $py) { Say "  python not found - run: decompile retools install python" "DarkYellow" }
   else {
+    # A missing module writes a traceback to stderr; under ErrorAction Stop that
+    # would abort the whole installer, so probe with Continue.
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
     $hasFrida = (& $py -c "import frida; print(frida.__version__)" 2>$null)
+    $ErrorActionPreference = $prevEap
     if ($LASTEXITCODE -eq 0) {
       Say "  python + frida ok (v$hasFrida); bridge runs standalone with: python plugins-side\frida\mcp_bridge.py"
-      Say "  (no copy needed — launch when you need it)"
+      Say "  (no copy needed - launch when you need it)"
     } else {
-      Say "  frida module missing — run:  $py -m pip install frida frida-tools" "DarkYellow"
+      Say "  frida module missing - run:  $py -m pip install frida frida-tools" "DarkYellow"
     }
   }
 }
@@ -179,7 +184,7 @@ if (Should "x64dbg") {
       $built = "$Here\x64dbg\build-$bits\Release\mcp_bridge$ext"
       $dst = "$x64\$bits\plugins"
       if (Test-Path $built) { Copy-Plugin $built $dst "x64dbg ($bits)" }
-      else { Say "  build $bits:  cmake -S $Here\x64dbg -B $Here\x64dbg\build-$bits -A $(if($bits -eq 'x64'){'x64'}else{'Win32'}) -DX64DBG_SDK=`"$x64\$bits\plugins\sdk`"" "DarkYellow" }
+      else { Say "  build ${bits}:  cmake -S $Here\x64dbg -B $Here\x64dbg\build-$bits -A $(if($bits -eq 'x64'){'x64'}else{'Win32'}) -DX64DBG_SDK=`"$x64\$bits\plugins\sdk`"" "DarkYellow" }
     }
   } else { Say "  set `$env:X64DBG_PATH" "DarkYellow" }
 }

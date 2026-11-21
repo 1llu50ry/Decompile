@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Installers must keep their native line endings on every checkout.
+*.sh  text eol=lf
+*.ps1 text eol=crlf

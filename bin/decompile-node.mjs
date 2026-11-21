@@ -397,11 +397,18 @@ function invokedViaNpx() {
          !!process.env.npm_command?.startsWith("exec");
 }
 
+// What `npx -y <spec> serve` fetches: the npm tarball attached to the latest
+// GitHub release (built by release-core.yml) — no npm-registry account needed.
+// Override with DECOMPILE_NPX_SPEC (e.g. `decompile@latest`). Keep in sync with
+// DEFAULT_NPX_SPEC in core/src/setup.rs.
+const DEFAULT_NPX_SPEC = "https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz";
+const npxSpec = () => process.env.DECOMPILE_NPX_SPEC?.trim() || DEFAULT_NPX_SPEC;
+
 function serverRegistration(mode = "auto") {
   if (mode === "npx" || (mode === "auto" && invokedViaNpx())) {
     return {
       command: "npx",
-      args: ["-y", "decompile@latest", "serve"],
+      args: ["-y", npxSpec(), "serve"],
     };
   }
   const entry = join(ROOT, "dist", "index.js");
@@ -614,9 +621,9 @@ async function cmdDoctor() {
   const add = (name, ok, note) => checks.push({ name, ok, note });
 
   // Node version.
-  const [major, minor] = process.versions.node.split(".").map(Number);
-  const nodeOk = major >= 22 && !(major === 22 && minor < 5);
-  add("node >= 22.5", nodeOk, `node ${process.versions.node}`);
+  const [major] = process.versions.node.split(".").map(Number);
+  const nodeOk = major >= 24; // node:sqlite is stable from 24 (package.json engines)
+  add("node >= 24", nodeOk, `node ${process.versions.node}`);
 
   // DB.
   const dbPath = process.env.MCP_SKILLS_DB ?? join(ROOT, "db", "skills.db");
@@ -886,6 +893,15 @@ switch (cmd) {
   case "providers":    await cmdProviders(); break;
   case "analyze":      await cmdAnalyze(rest[0]); break;
   case "inspect":      await cmdAnalyze(rest[0], { shallow: true }); break;
+  // Same shape as the Rust CLI (`decompile 6.0.0`) — installers compare it
+  // against the requested release tag.
+  case "-V":
+  case "--version":
+  case "version": {
+    const pkg = JSON.parse(await readFile(join(__dirname, "..", "package.json"), "utf8"));
+    console.log(`decompile ${pkg.version}`);
+    break;
+  }
   case "-h":
   case "--help":
   case "help":

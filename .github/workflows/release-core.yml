@@ -1,9 +1,21 @@
 name: release-core
 
-# Cross-platform release pipeline for the Rust `decompile` core binary.
-# Builds with LLVM (clang / lld) on every runner, packages the binary
-# plus the Node CLI into a per-OS archive, and uploads everything to the
-# tag's GitHub release.
+# Cross-platform release pipeline.
+#
+#   app      builds the platform-independent payload once: the npm package
+#            (dist/, db/skills.db, docs/, bin/*.mjs, …) + production
+#            node_modules + plugin manifests.
+#   build    compiles the Rust `decompile` CLI per target and drops it into
+#            that payload as bin/decompile{.exe}, producing a self-contained
+#            bundle: decompile-<target>.{tar.gz,zip} + .sha256.
+#   publish  attaches the bundles, SHA256SUMS and the one-line installers
+#            (install.sh / install.ps1, pinned to the tag) to the release.
+#
+# Bundle layout (what install.sh / install.ps1 expect):
+#   decompile/
+#     bin/decompile[.exe]   Rust CLI (finds its root via ../package.json)
+#     bin/decompile.mjs     Node shim
+#     package.json dist/ db/ docs/ node_modules/ …
 
 on:
   push:
@@ -16,7 +28,82 @@ on:
         required: true
 
 jobs:
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: tag matches package.json + core/Cargo.toml
+        env:
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          pkg=$(node -p 'require("./package.json").version')
+          cargo=$(sed -n 's/^version *= *"\(.*\)"/\1/p' core/Cargo.toml | head -n1)
+          echo "tag=$TAG package.json=$pkg Cargo.toml=$cargo"
+          # install.sh verifies `decompile --version` against the tag.
+          [ "${TAG#v}" = "$pkg" ] && [ "${TAG#v}" = "$cargo" ] || { echo "::error::version mismatch"; exit 1; }
+      - run: npm ci || npm install
+      - run: npm run build
+      - name: assemble payload
+        run: |
+          set -euo pipefail
+          mkdir -p out payload
+          # Pin the dependency tree CI tested — npm honours a packaged
+          # npm-shrinkwrap.json for `npx` / `npm i -g` (package-lock is ignored).
+          cp package-lock.json npm-shrinkwrap.json
+          npm pack --pack-destination out      # runs prepack-check.mjs
+          mv out/decompile-*.tgz out/decompile.tgz
+          tar -xzf out/decompile.tgz -C payload
+          mv payload/package payload/decompile
+          cp package-lock.json payload/decompile/
+          (cd payload/decompile && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
+          cp AGENTS.md payload/decompile/
+          for d in .claude-plugin .codex-plugin .cursor-plugin dsh-decompile-plugin; do
+            [ -d "$d" ] && cp -R "$d" payload/decompile/
+          done
+          test -f payload/decompile/dist/index.js
+          test -f payload/decompile/db/skills.db
+          tar -cf app.tar -C payload decompile
+          du -sh payload/decompile
+
+      # The npm tarball doubles as the npx package: every release carries
+      # decompile.tgz, so `npx -y <release-url>/decompile.tgz setup` works with
+      # no npm-registry account. Smoke-test it exactly the way users run it.
+      - name: smoke test npx package
+        run: |
+          set -euo pipefail
+          export HOME="$RUNNER_TEMP/npx-home"; mkdir -p "$HOME"
+          cd "$RUNNER_TEMP"
+          spec="$GITHUB_WORKSPACE/out/decompile.tgz"
+          npx -y --package="$spec" decompile --version | tee v.txt
+          grep -q "decompile $(node -p 'require(process.env.GITHUB_WORKSPACE+"/package.json").version')" v.txt
+          npx -y --package="$spec" decompile setup --client claude_code --npx --dry-run | tee s.txt
+          grep -q 'releases/latest/download/decompile.tgz' s.txt || grep -q 'npx registration' s.txt
+          printf '%s\n%s\n%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+            | timeout 120 npx -y --package="$spec" decompile serve 2>/dev/null > rpc.txt || true
+          n=$(node -e 'const l=require("fs").readFileSync("rpc.txt","utf8").split("\n");for(const x of l){try{const m=JSON.parse(x);if(m.id===2){console.log(m.result.tools.length);process.exit(0)}}catch{}}console.log(0)')
+          echo "tools via npx: $n"
+          [ "$n" -gt 100 ]
+          ls -lh "$GITHUB_WORKSPACE/out/decompile.tgz"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-payload
+          path: app.tar
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: decompile-npm
+          path: out/decompile.tgz
+          retention-days: 7
+
   build:
+    needs: app
     strategy:
       fail-fast: false
       matrix:
@@ -31,6 +118,51 @@ jobs:
             pack: tar
             cross: true
           - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: armv7-unknown-linux-musleabihf
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: arm-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: riscv64gc-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: powerpc64le-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: s390x-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: x86_64-unknown-freebsd
+            os: ubuntu-latest
+            ext: ''
+            pack: tar
+            cross: true
+          - target: aarch64-linux-android
             os: ubuntu-latest
             ext: ''
             pack: tar
@@ -72,62 +204,70 @@ jobs:
         run: rustup target add ${{ matrix.target }}
         shell: bash
 
-      # Only apply the lld config on the native Linux x64 job. Every
-      # other target would either ignore the override (cross) or try to
-      # invoke a linker that doesn't exist (Windows w/o LLVM).
       - name: enable LLVM linker config (Linux native)
         if: runner.os == 'Linux' && !matrix.cross
         run: cp core/.cargo/config.lld.toml core/.cargo/config.toml
         shell: bash
 
-      - name: install cross (for cross-target)
-        if: matrix.cross
+      # aarch64-pc-windows-msvc is built by MSVC on the x64 runner — `cross`
+      # is a Linux/Docker tool, so only use it for Linux cross targets.
+      - name: install cross (Linux cross-targets)
+        if: matrix.cross && runner.os == 'Linux'
         run: cargo install cross --locked
 
-      - name: build (native)
-        if: ${{ !matrix.cross }}
+      - name: build (native toolchain)
+        if: ${{ !(matrix.cross && runner.os == 'Linux') }}
         run: cargo build --release --target ${{ matrix.target }}
         working-directory: core
         shell: bash
 
       - name: build (cross)
-        if: matrix.cross
+        if: matrix.cross && runner.os == 'Linux'
         run: cross build --release --target ${{ matrix.target }}
         working-directory: core
         shell: bash
 
-      - name: stage archive contents
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-payload
+
+      - name: stage bundle
         shell: bash
         run: |
-          mkdir -p stage/decompile
-          cp core/target/${{ matrix.target }}/release/decompile${{ matrix.ext }} stage/decompile/
-          cp bin/decompile.mjs bin/decompile-node.mjs stage/decompile/
-          cp README.md LICENSE AGENTS.md stage/decompile/
-          cp -r docs stage/decompile/
-          mkdir -p stage/decompile/.claude-plugin
-          cp -r .claude-plugin stage/decompile/
-          mkdir -p stage/decompile/.codex-plugin
-          cp -r .codex-plugin stage/decompile/
-          mkdir -p stage/decompile/.cursor-plugin
-          cp -r .cursor-plugin stage/decompile/
-          mkdir -p stage/decompile/dsh-decompile-plugin
-          cp -r dsh-decompile-plugin stage/decompile/
+          set -euo pipefail
+          mkdir -p stage
+          tar -xf app.tar -C stage
+          cp core/target/${{ matrix.target }}/release/decompile${{ matrix.ext }} stage/decompile/bin/
+          chmod 0755 stage/decompile/bin/decompile${{ matrix.ext }}
+
+      - name: smoke test (native targets)
+        if: ${{ !matrix.cross }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage/decompile/bin/decompile${{ matrix.ext }} --version
+          stage/decompile/bin/decompile${{ matrix.ext }} guidance | head -n 3
+          stage/decompile/bin/decompile${{ matrix.ext }} setup --client claude_code --dry-run --local
 
       - name: pack tar
         if: matrix.pack == 'tar'
         shell: bash
         run: |
-          cd stage
-          tar -czf ../decompile-${{ matrix.target }}.tar.gz decompile/*
-          cd ..
-          sha256sum decompile-${{ matrix.target }}.tar.gz > decompile-${{ matrix.target }}.tar.gz.sha256
+          set -euo pipefail
+          a=decompile-${{ matrix.target }}.tar.gz
+          tar -czf "$a" -C stage decompile
+          if command -v sha256sum >/dev/null; then sha256sum "$a" > "$a.sha256"; else shasum -a 256 "$a" > "$a.sha256"; fi
+          cat "$a.sha256"
 
       - name: pack zip
         if: matrix.pack == 'zip'
-        shell: pwsh
+        shell: bash
         run: |
-          Compress-Archive -Path stage/decompile/* -DestinationPath decompile-${{ matrix.target }}.zip -Force
-          (Get-FileHash decompile-${{ matrix.target }}.zip -Algorithm SHA256).Hash + "  decompile-${{ matrix.target }}.zip" | Out-File -FilePath decompile-${{ matrix.target }}.zip.sha256 -Encoding ascii
+          set -euo pipefail
+          a=decompile-${{ matrix.target }}.zip
+          (cd stage && 7z a -tzip -mx=7 "../$a" decompile >/dev/null)
+          sha256sum "$a" > "$a.sha256"
+          cat "$a.sha256"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -137,7 +277,7 @@ jobs:
             decompile-${{ matrix.target }}.tar.gz.sha256
             decompile-${{ matrix.target }}.zip
             decompile-${{ matrix.target }}.zip.sha256
-          if-no-files-found: ignore
+          if-no-files-found: error
           retention-days: 7
 
   publish:
@@ -151,25 +291,93 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-
-      - name: flatten artifacts
-        run: |
-          mkdir -p flat
-          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) -exec cp {} flat/ \;
-          ls -lh flat
+          pattern: decompile-*
 
       - name: resolve tag
         id: tag
         run: |
           if [ -n "${{ github.event.inputs.tag }}" ]; then
-            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: collect assets + pinned installers
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p flat
+          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.tgz' -o -name '*.sha256' \) -exec cp {} flat/ \;
+
+          # Installers attached to a release install *that* release by default.
+          sed 's|^VERSION="${VERSION:-latest}" # @release-pin$|VERSION="${VERSION:-'"$TAG"'}" # @release-pin|' install.sh > flat/install.sh
+          sed "s|^\$DefaultVersion = 'latest' # @release-pin\$|\$DefaultVersion = '$TAG' # @release-pin|" install.ps1 > flat/install.ps1
+          grep -q "VERSION:-$TAG}" flat/install.sh
+          grep -q "DefaultVersion = '$TAG'" flat/install.ps1
+          sh -n flat/install.sh
+          chmod 0755 flat/install.sh
+
+          (cd flat && sha256sum install.sh install.ps1 decompile.tgz *.tar.gz *.zip > SHA256SUMS)
+          for f in install.sh install.ps1 decompile.tgz; do (cd flat && sha256sum "$f" > "$f.sha256"); done
+          ls -lh flat
+          cat flat/SHA256SUMS
+
+      - name: release notes (install section)
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+          REPO: ${{ github.repository }}
+        run: |
+          cat > notes.md <<EOF
+          ## Install
+
+          **Linux / macOS**
+          \`\`\`bash
+          curl -fsSL https://github.com/$REPO/releases/download/$TAG/install.sh | sh
+          \`\`\`
+
+          **Windows (PowerShell)**
+          \`\`\`powershell
+          irm https://github.com/$REPO/releases/download/$TAG/install.ps1 | iex
+          \`\`\`
+
+          **npx (nothing installed — Node.js 24+)**
+          \`\`\`bash
+          npx -y https://github.com/$REPO/releases/download/$TAG/decompile.tgz setup -i --npx
+          \`\`\`
+          Windows: use \`npx.cmd\` if PowerShell blocks \`npx\`. Agents are registered as
+          \`npx -y https://github.com/$REPO/releases/latest/download/decompile.tgz serve\`.
+
+          Options: \`--prefix\`, \`--method auto|binary|npm|npx\`, \`--skip-setup\`, \`--uninstall\`
+          (PowerShell: \`-Prefix\`, \`-Method\`, \`-SkipSetup\`, \`-Uninstall\`). Bundles need Node.js 24+ for \`decompile serve\`.
+          Verify downloads with \`SHA256SUMS\`.
+
+          | Platform | Asset |
+          |---|---|
+          | Linux x64 (glibc) | \`decompile-x86_64-unknown-linux-gnu.tar.gz\` |
+          | Linux arm64 (glibc) | \`decompile-aarch64-unknown-linux-gnu.tar.gz\` |
+          | Linux x64 (musl / Alpine) | \`decompile-x86_64-unknown-linux-musl.tar.gz\` |
+          | Linux arm64 (musl / Alpine) | \`decompile-aarch64-unknown-linux-musl.tar.gz\` |
+          | Linux armv7 (Raspberry Pi 2/3/4 32-bit, glibc) | \`decompile-armv7-unknown-linux-gnueabihf.tar.gz\` |
+          | Linux armv7 (musl / Alpine) | \`decompile-armv7-unknown-linux-musleabihf.tar.gz\` |
+          | Linux armv6 (Raspberry Pi Zero / 1) | \`decompile-arm-unknown-linux-gnueabihf.tar.gz\` |
+          | Linux RISC-V 64 | \`decompile-riscv64gc-unknown-linux-gnu.tar.gz\` |
+          | Linux POWER (ppc64le) | \`decompile-powerpc64le-unknown-linux-gnu.tar.gz\` |
+          | Linux IBM Z (s390x) | \`decompile-s390x-unknown-linux-gnu.tar.gz\` |
+          | FreeBSD x64 | \`decompile-x86_64-unknown-freebsd.tar.gz\` |
+          | Android arm64 (Termux) | \`decompile-aarch64-linux-android.tar.gz\` |
+          | macOS Intel | \`decompile-x86_64-apple-darwin.tar.gz\` |
+          | macOS Apple Silicon | \`decompile-aarch64-apple-darwin.tar.gz\` |
+          | Windows x64 | \`decompile-x86_64-pc-windows-msvc.zip\` |
+          | Windows arm64 | \`decompile-aarch64-pc-windows-msvc.zip\` |
+          EOF
+          cat notes.md
 
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: ${{ steps.tag.outputs.tag }}
+          body_path: notes.md
+          append_body: true
           generate_release_notes: true
           files: flat/*

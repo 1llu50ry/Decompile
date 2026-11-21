@@ -28,7 +28,7 @@ decompile setup [--client ID ...] [--all-detected] [-i] [-n] [--npx | --local]
 | `--all-detected` | Configure every agent whose config path exists on disk. |
 | `-i / --interactive` | Numbered picker with detected entries marked. |
 | `-n / --dry-run` | Print the resolved plan without touching anything. |
-| `--npx` | Write `npx -y decompile@latest serve` registration — cache-safe. |
+| `--npx` | Write `npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz serve` registration — cache-safe. |
 | `--local` | Write a filesystem-path registration pointing at this clone. |
 
 Env auto-detection: if the binary was fetched via `npx` (ROOT in

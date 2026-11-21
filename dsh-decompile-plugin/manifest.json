@@ -1,7 +1,7 @@
 {
   "name": "dsh-decompile",
   "displayName": "decompile for DeepSeek",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "Reverse-engineering MCP for DeepSeek (DSH). 230+ native tools (PE / ELF / Mach-O / DEX / WASM / .NET / ASAR / GGUF / BEAM / Go), 60+ decompiler and debugger backend bridges, 6,000+ skills catalog. Returns structured findings with evidence and unknowns.",
   "runtime": "mcp",
   "model": {

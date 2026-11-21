@@ -1,6 +1,6 @@
 {
   "name": "decompile",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "bin": {
     "decompile": "bin/decompile.mjs"
   },
@@ -14,7 +14,8 @@
     "inspect": "npx @modelcontextprotocol/inspector node dist/index.js",
     "test": "tsc && node --test tests/*.test.mjs",
     "prepublishOnly": "npm run build",
-    "pack:dry": "npm pack --dry-run"
+    "pack:dry": "npm pack --dry-run",
+    "prepack": "node scripts/prepack-check.mjs"
   },
   "files": [
     "dist/",
@@ -27,7 +28,10 @@
     "scripts/",
     "db/skills.db",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "install.sh",
+    "install.ps1",
+    "npm-shrinkwrap.json"
   ],
   "keywords": [
     "mcp",

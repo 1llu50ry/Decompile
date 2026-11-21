@@ -36,10 +36,32 @@ If you're on security-research, binary-analysis, defensive-engineering, or SDK w
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/1llu50ry/decompile?quickstart=1)
 
-### The one-liner
+### Install
+
+Needs **Node.js 24+** for the MCP server ([how to get it](https://github.com/1llu50ry/Decompile/wiki/Installation#1-prepare-your-computer)).
 
 ```bash
-npx -y decompile@latest setup
+# Linux / macOS / FreeBSD / Termux
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh
+```
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
+```
+
+The installer prints an install plan, downloads the self-contained bundle
+for your device (16 targets: x64 / arm64 / armv7 / armv6 / RISC-V / POWER /
+s390x, glibc + musl, macOS, Windows, FreeBSD, Android), verifies its
+SHA-256, puts `decompile` on PATH and starts `decompile setup -i`. Useful
+flags: `--dry-run`, `--version v6.0.0`, `--method npm|npx`, `--install-node`,
+`--no-setup`, `--uninstall` — see the [Installation wiki](https://github.com/1llu50ry/Decompile/wiki/Installation).
+Each GitHub release also carries pinned `install.sh` / `install.ps1` and `SHA256SUMS`.
+
+### The npx one-liner (nothing installed)
+
+```bash
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup
 ```
 
 By default it configures Claude Code. Pass `-i` for an interactive
@@ -52,13 +74,13 @@ the registration. Restart your agent and you're done.
 Variations:
 
 ```bash
-npx -y decompile@latest setup -i                           # interactive picker (42 agents)
-npx -y decompile@latest setup --all-detected               # every detected agent
-npx -y decompile@latest setup --client claude_code         # one specific client
-npx -y decompile@latest setup --client codex --client cursor --client dsh
-npx -y decompile@latest setup --dry-run                    # preview without writing
-npx -y decompile@latest setup --npx                        # cache-safe (npx-based) registration
-npm install -g decompile && decompile --help               # install the command permanently
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup -i                           # interactive picker (42 agents)
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --all-detected               # every detected agent
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client claude_code         # one specific client
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client codex --client cursor --client dsh
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --dry-run                    # preview without writing
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --npx                        # cache-safe (npx-based) registration
+npm install -g https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz && decompile --help               # install the command permanently
 ```
 
 ### Other entry points

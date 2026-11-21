@@ -2,6 +2,48 @@
 
 All notable changes to this project. Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [6.0.1] — 2026-11-21
+
+Full installers for every platform, and releases that actually ship them.
+
+### Added
+- **`install.sh`** (Linux / macOS / FreeBSD / Termux) and **`install.ps1`**
+  (Windows) one-line installers: install plan before any change,
+  `--dry-run`, `--verbose`, SHA-256 verification, version check *before*
+  replacing an existing install, PATH setup (bash / zsh / fish / Windows
+  user PATH), interactive `decompile setup` via the terminal,
+  `--method auto|binary|npm|npx` with npm fallback, `--install-node`,
+  per-OS Node.js help, `--uninstall`. A truncated `curl | sh` download
+  executes nothing.
+- **16 release targets**: Linux x64 / arm64 / armv7 / armv6 / riscv64 /
+  ppc64le / s390x (glibc, plus musl for x64 / arm64 / armv7), FreeBSD x64,
+  Android arm64 (Termux), macOS x64 / arm64, Windows x64 / arm64.
+- Releases attach version-pinned `install.sh` / `install.ps1`, per-asset
+  `.sha256`, `SHA256SUMS` and an install section in the notes.
+- **npx package built by GitHub Actions**: `release-core.yml` packs the npm
+  tarball (with a pinned `npm-shrinkwrap.json`), smoke-tests it through
+  `npx` (`--version`, `setup --npx`, `serve` → `tools/list`) and attaches it
+  to every release as `decompile.tgz`:
+  `npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup -i`.
+  `setup --npx` registers that URL by default; override with
+  `DECOMPILE_NPX_SPEC` (e.g. `decompile@latest` once on the npm registry).
+  Installers' `--method npm|npx` use it too.
+- npm package: runtime admission (readable error on Node < 24), `prepack`
+  content guard, `npm-shrinkwrap.json`, installers included.
+- `decompile --version` in the Node CLI (npm / npx installs).
+
+### Fixed
+- Release archives contained only the Rust binary — no `dist/`,
+  `package.json` or `db/` — so `decompile setup` after the old installer
+  always failed. Bundles are now self-contained.
+- Old `install.sh` looked for the binary at the archive root and always
+  aborted; `aarch64-pc-windows-msvc` was built with `cross` on Windows.
+- `install.ps1`: Node.js was reported missing on Windows PowerShell 5.1
+  (quote mangling in native-command arguments).
+- `doctor` checked Node >= 22 although the server needs 24.
+- CI refuses to release when the tag, `package.json` and `core/Cargo.toml`
+  versions disagree.
+
 ## [5.0.1] — 2026-10-29
 
 Follow-up fixes + repo rename. The fat DB (`skills-full.db`) release

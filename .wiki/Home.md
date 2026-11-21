@@ -6,7 +6,7 @@ runtime behavior.
 **Install (one line):**
 
 ```bash
-npx -y decompile@latest setup
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup
 ```
 
 Then restart your agent. Done.

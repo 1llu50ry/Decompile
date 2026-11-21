@@ -1,7 +1,7 @@
 {
   "name": "decompile",
   "displayName": "decompile",
-  "version": "6.0.0",
+  "version": "6.0.1",
   "description": "Reverse-engineering MCP for OpenAI Codex / Codex CLI: native PE/ELF/Mach-O/.NET/WASM parsers, decompiler and debugger bridges, instrumentation, and a 6,000+ skills catalog.",
   "author": "decompile maintainers",
   "license": "MIT",

@@ -26,12 +26,12 @@ applications, and runtime behavior. It ships:
 ## Install into an agent
 
 ```bash
-npx -y decompile@latest setup                         # default: claude_code
-npx -y decompile@latest setup -i                      # interactive picker
-npx -y decompile@latest setup --all-detected          # every installed agent
-npx -y decompile@latest setup --client claude_code    # specific one
-npx -y decompile@latest setup --client claude_code --client codex --client cursor
-npx -y decompile@latest setup --npx                   # cache-safe registration
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup                         # default: claude_code
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup -i                      # interactive picker
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --all-detected          # every installed agent
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client claude_code    # specific one
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client claude_code --client codex --client cursor
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --npx                   # cache-safe registration
 ```
 
 ### Supported clients (42)

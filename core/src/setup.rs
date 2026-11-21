@@ -288,12 +288,26 @@ fn invoked_via_npx(root: &Path) -> bool {
     false
 }
 
+/// What `npx -y <spec> serve` fetches. Defaults to the npm tarball attached
+/// to the latest GitHub release (built by .github/workflows/release-core.yml),
+/// so the npx path needs no npm-registry account. Override with
+/// DECOMPILE_NPX_SPEC, e.g. `decompile@latest` once the package is on npm.
+pub const DEFAULT_NPX_SPEC: &str =
+    "https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz";
+
+fn npx_spec() -> String {
+    std::env::var("DECOMPILE_NPX_SPEC")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| DEFAULT_NPX_SPEC.to_string())
+}
+
 fn server_registration(root: &Path, mode: Mode) -> Value {
     let use_npx = matches!(mode, Mode::Npx) || (matches!(mode, Mode::Auto) && invoked_via_npx(root));
     if use_npx {
         return serde_json::json!({
             "command": "npx",
-            "args": ["-y", "decompile@latest", "serve"]
+            "args": ["-y", npx_spec(), "serve"]
         });
     }
     let entry = root.join("dist").join("index.js");

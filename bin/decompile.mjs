@@ -5,12 +5,29 @@
 // before `cargo build --release`.
 
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { unsupportedRuntimeMessage } from "./runtime-admission.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.MCP_PROJECT_ROOT ?? resolve(__dirname, "..");
+
+// The native CLI runs without Node; the MCP server and the Node CLI don't.
+// Admit the runtime before handing off to either of them.
+function admitRuntime() {
+  let range;
+  try {
+    range = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")).engines?.node;
+  } catch {
+    return;
+  }
+  const msg = unsupportedRuntimeMessage(range);
+  if (msg) {
+    process.stderr.write(msg + "\n");
+    process.exit(1);
+  }
+}
 
 function rustBinary() {
   const exe = process.platform === "win32" ? "decompile.exe" : "decompile";
@@ -27,6 +44,7 @@ function rustBinary() {
 
 const rust = rustBinary();
 const args = process.argv.slice(2);
+if (!rust || args[0] === "serve") admitRuntime();
 if (rust) {
   const r = spawnSync(rust, args, { stdio: "inherit" });
   process.exit(r.status ?? 1);

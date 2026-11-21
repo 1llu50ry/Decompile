@@ -30,6 +30,14 @@ jobs:
       - run: npm ci || npm install
       - run: npx tsc
       - run: node --test tests/*.test.mjs
+      # Ship the exact dependency tree CI tested: npm honours a published
+      # npm-shrinkwrap.json for `npm i -g` and `npx` (package-lock is ignored).
+      - name: pin dependency tree (npm-shrinkwrap.json)
+        run: cp package-lock.json npm-shrinkwrap.json
+      - name: verify package contents
+        run: |
+          npm pack --dry-run --json > pack.json
+          node -e 'const f=require("./pack.json")[0].files.map(x=>x.path);for(const p of ["install.sh","install.ps1","npm-shrinkwrap.json","dist/index.js","db/skills.db","bin/runtime-admission.mjs"]){if(!f.includes(p)){console.error("missing from package: "+p);process.exit(1)}}console.log(f.length+" files ok")'
       - name: Publish to npm (skipped unless NPM_TOKEN is set)
         if: env.HAS_NPM_TOKEN == 'yes'
         run: npm publish --access public --provenance

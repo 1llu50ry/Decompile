@@ -31,11 +31,11 @@ pub fn run(root: &Path) -> Result<()> {
                 .split('.')
                 .next()
                 .and_then(|s| s.parse::<u32>().ok())
-                .map(|m| m >= 22)
+                .map(|m| m >= 24)
                 .unwrap_or(false);
-            checks.push(("node >= 22".into(), ok, format!("node {}", v)));
+            checks.push(("node >= 24".into(), ok, format!("node {}", v)));
         }
-        _ => checks.push(("node >= 22".into(), false, "node not found on PATH".into())),
+        _ => checks.push(("node >= 24".into(), false, "node not found on PATH".into())),
     }
 
     // DB.

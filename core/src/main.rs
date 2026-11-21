@@ -49,8 +49,9 @@ enum Cmd {
         /// Print the resolved plan without applying it.
         #[arg(short = 'n', long)]
         dry_run: bool,
-        /// Force an `npx -y decompile@latest serve` registration so the client
-        /// always re-fetches the latest release.
+        /// Force an `npx -y <spec> serve` registration so the client always
+        /// re-fetches the latest release. <spec> defaults to the latest GitHub
+        /// release's decompile.tgz; override with DECOMPILE_NPX_SPEC.
         #[arg(long, conflicts_with = "local")]
         npx: bool,
         /// Force a local-path registration pointing at this clone.

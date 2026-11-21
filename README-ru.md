@@ -22,7 +22,7 @@
 ## Установка в агента одной строкой
 
 ```bash
-npx -y decompile@latest setup
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup
 ```
 
 Зарегистрирует MCP-сервер в Claude Code (по умолчанию), установит
@@ -32,13 +32,13 @@ workflow-инструкции как skill и выведет что именно
 ### Варианты
 
 ```bash
-npx -y decompile@latest setup -i                      # интерактивный выбор (42 агента)
-npx -y decompile@latest setup --all-detected          # все обнаруженные
-npx -y decompile@latest setup --client claude_code    # конкретный
-npx -y decompile@latest setup --client codex --client cursor --client dsh
-npx -y decompile@latest setup --dry-run               # превью без записи
-npx -y decompile@latest setup --npx                   # cache-safe регистрация (npx каждый раз)
-npm install -g decompile && decompile --help          # поставить команду навсегда
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup -i                      # интерактивный выбор (42 агента)
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --all-detected          # все обнаруженные
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client claude_code    # конкретный
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --client codex --client cursor --client dsh
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --dry-run               # превью без записи
+npx -y https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz setup --npx                   # cache-safe регистрация (npx каждый раз)
+npm install -g https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz && decompile --help          # поставить команду навсегда
 ```
 
 ### Нативные установщики

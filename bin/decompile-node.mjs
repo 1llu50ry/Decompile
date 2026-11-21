@@ -508,8 +508,7 @@ async function cmdSetup() {
   // programs the tools drive (Ghidra + JDK, radare2, UPX, x64dbg, Python env…).
   // --minimal skips it; `decompile retools install` adds it later.
   if (!dryRun && !minimal && process.env.DECOMPILE_SETUP_RETOOLS !== "0") {
-    console.log("
-installing RE tools (skip with --minimal) …");
+    console.log("\ninstalling RE tools (skip with --minimal) …");
     const t = await import("./decompile-tools.mjs");
     const code = await t.main(["install", "--all"]);
     if (code) console.log("some RE tools did not install — see the summary above; retry: decompile retools install");
@@ -916,7 +915,7 @@ switch (cmd) {
     process.exitCode = await t.main(rest);
     break;
   }
-  // Same shape as the Rust CLI (`decompile 6.0.0`) — installers compare it
+  // Same shape as the Rust CLI (`decompile 0.0.1`) — installers compare it
   // against the requested release tag.
   case "-V":
   case "--version":

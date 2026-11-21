@@ -120,11 +120,9 @@ fn main() -> Result<()> {
                 println!("RE tools skipped (--minimal). Install later: decompile retools install");
                 return Ok(());
             }
-            println!("
-installing RE tools (skip with --minimal) …");
+            println!("\ninstalling RE tools (skip with --minimal) …");
             if let Err(e) = node_cli_status(&root, "retools", &["install".into(), "--all".into()]) {
-                println!("RE tools not installed: {e:#}
-retry: decompile retools install");
+                println!("RE tools not installed: {e:#}\nretry: decompile retools install");
             }
             Ok(())
         }

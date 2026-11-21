@@ -17,7 +17,7 @@
 #
 # Environment overrides (or the matching --flag, see --help):
 #   PREFIX=/usr/local      install prefix                 (default: ~/.local)
-#   VERSION=v6.0.0         pin a release tag              (default: latest)
+#   VERSION=v0.0.1         pin a release tag              (default: latest)
 #   CHANNEL=prerelease     newest release incl. pre-releases
 #   METHOD=auto|binary|npm|npx                            (default: auto)
 #   SKIP_SETUP=1           install only, don't run `decompile setup`
@@ -29,7 +29,7 @@
 #
 # Examples
 #   curl -fsSL …/install.sh | PREFIX=/usr/local sudo -E sh        # system-wide
-#   curl -fsSL …/install.sh | sh -s -- --version v6.0.0 --skip-setup
+#   curl -fsSL …/install.sh | sh -s -- --version v0.0.1 --skip-setup
 #   curl -fsSL …/install.sh | sh -s -- --method npx                # npx-only registration
 #   curl -fsSL …/install.sh | sh -s -- --uninstall
 #
@@ -81,7 +81,7 @@ decompile installer (Linux / macOS)
 usage: install.sh [options]
 
   --prefix DIR        install prefix (default: ~/.local)
-  --version TAG       release tag to install, e.g. v6.0.0 (default: latest)
+  --version TAG       release tag to install, e.g. v0.0.1 (default: latest)
   --prerelease        newest release including pre-releases
   --method M          auto | binary | npm | npx (default: auto)
                         binary  prebuilt bundle from GitHub Releases
@@ -139,7 +139,7 @@ case "$VERSION" in [0-9]*) VERSION="v$VERSION" ;; esac
 case "$VERSION" in
   latest) ;;
   v[0-9]*.[0-9]*.[0-9]*) ;;
-  *) die "VERSION must be 'latest' or a release tag like v6.0.0 (got '$VERSION')" ;;
+  *) die "VERSION must be 'latest' or a release tag like v0.0.1 (got '$VERSION')" ;;
 esac
 
 BIN_DIR="$PREFIX/bin"

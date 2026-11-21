@@ -6,7 +6,7 @@
 
 **230+ MCP tools · 60+ RE/debug backends · 9 host-side plugins · 6,000+ skills · 170+ agents · 160+ subagents · 190+ plugins · 3,000+ prompts · multi-agent mesh · native x86-64 + ARM64 emulators**
 
-[![version](https://img.shields.io/badge/version-6.0.0-blue)](CHANGELOG.md) [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/) [![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/) [![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts) [![skills](https://img.shields.io/badge/skills-6%2C000%2B-orange)](db/skills.db) [![docker](https://img.shields.io/badge/docker-multi--arch-informational)](Dockerfile) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![audit](https://img.shields.io/badge/npm%20audit-0-brightgreen)](package.json)
+[![version](https://img.shields.io/badge/version-0.0.1-blue)](CHANGELOG.md) [![tests](https://img.shields.io/badge/tests-133%2F133-success)](tests/) [![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/) [![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts) [![skills](https://img.shields.io/badge/skills-6%2C000%2B-orange)](db/skills.db) [![docker](https://img.shields.io/badge/docker-multi--arch-informational)](Dockerfile) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![audit](https://img.shields.io/badge/npm%20audit-0-brightgreen)](package.json)
 
 > **v5.0.0 released.** 19 GiB → 3.3 GiB working tree (83% smaller via gzipped source archives), + four feature waves: host plugin build systems, Frida bridge + dynamic analysis, ARM64 emulator + decompile cache + chunking, bindiff / ROP / game-engine metadata / MCP sampling / SVG visualization. See [CHANGELOG](CHANGELOG.md).
 
@@ -64,7 +64,7 @@ Each one installs **everything** and wires it up:
 - our bridge plugins into IDA / Binary Ninja / Cheat Engine **when those are installed** (they are commercial, so not downloaded).
 
 `--minimal` (`-Minimal` on Windows) installs only the core; add the RE programs later with
-`decompile retools install`. Other flags: `--dry-run`, `--version v6.1.0`, `--method npm|npx`,
+`decompile retools install`. Other flags: `--dry-run`, `--version v0.0.1`, `--method npm|npx`,
 `--install-node`, `--no-setup`, `--uninstall` — see the [Installation wiki](https://github.com/1llu50ry/Decompile/wiki/Installation).
 Check the result with `decompile doctor`; manage RE programs with `decompile retools status | install | env`.
 

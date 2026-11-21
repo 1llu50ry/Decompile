@@ -3,7 +3,7 @@
 Content library. Single source of truth: `db/skills.db` (SQLite +
 FTS5).
 
-## Counts (v6.0.0)
+## Counts (v0.0.1)
 
 | Table | Rows |
 |---|---|

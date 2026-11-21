@@ -7,7 +7,7 @@
 // Usage:
 //   node scripts/cut-release.mjs                # dry-run (prints commands)
 //   node scripts/cut-release.mjs --push         # actually tag and push
-//   node scripts/cut-release.mjs 6.1.0 --push   # override version
+//   node scripts/cut-release.mjs 0.0.1 --push   # override version
 
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

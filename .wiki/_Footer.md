@@ -1,1 +1,1 @@
-[decompile v6.0.0](https://github.com/1llu50ry/Decompile) · MIT · [npm](https://www.npmjs.com/package/decompile) · [install.sh](https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh) · [install.ps1](https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1)
+[decompile v0.0.1](https://github.com/1llu50ry/Decompile) · MIT · [npm](https://www.npmjs.com/package/decompile) · [install.sh](https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh) · [install.ps1](https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1)

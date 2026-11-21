@@ -153,11 +153,11 @@ Every GitHub release also carries its own installers, pinned to that
 version, plus `SHA256SUMS`:
 
 ```bash
-curl -fsSL https://github.com/1llu50ry/Decompile/releases/download/v6.0.0/install.sh | sh
+curl -fsSL https://github.com/1llu50ry/Decompile/releases/download/v0.0.1/install.sh | sh
 ```
 
 ```powershell
-irm https://github.com/1llu50ry/Decompile/releases/download/v6.0.0/install.ps1 | iex
+irm https://github.com/1llu50ry/Decompile/releases/download/v0.0.1/install.ps1 | iex
 ```
 
 `https://github.com/1llu50ry/Decompile/releases/latest/download/install.sh`
@@ -254,7 +254,7 @@ agent plugin manifests. Only Node.js is external. Anything not listed
 | `install.sh` flag | `install.ps1` parameter | Env var | Meaning |
 |---|---|---|---|
 | `--prefix DIR` | `-Prefix DIR` | `PREFIX` | Install location (default `~/.local` / `~\.decompile`) |
-| `--version v6.0.0` | `-Version v6.0.0` | `VERSION` | Exact release (default: latest) |
+| `--version v0.0.1` | `-Version v0.0.1` | `VERSION` | Exact release (default: latest) |
 | `--prerelease` | `-Prerelease` | `CHANNEL=prerelease` | Newest release including pre-releases |
 | `--method M` | `-Method M` | `METHOD` | `auto` (bundle, npm fallback) · `binary` · `npm` · `npx` |
 | `--no-setup` | `-NoSetup` | `SKIP_SETUP=1` | Install only; run `decompile setup` later |
@@ -269,12 +269,12 @@ agent plugin manifests. Only Node.js is external. Anything not listed
 Passing flags through a pipe:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh -s -- --version v6.0.0 --no-setup
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh -s -- --version v0.0.1 --no-setup
 curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | PREFIX=/usr/local sudo -E sh    # system-wide
 ```
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1))) -Version v6.0.0 -NoSetup
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1))) -Version v0.0.1 -NoSetup
 $env:METHOD = 'npx'; irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
 ```
 
@@ -296,7 +296,7 @@ The npx package is built by GitHub Actions (`release-core.yml`): the npm
 tarball is packed with a pinned `npm-shrinkwrap.json`, smoke-tested through
 `npx` (`--version`, `setup`, `serve` → `tools/list`) and attached to every
 release as `decompile.tgz` — no npm-registry account involved. Pin a version
-with `…/releases/download/v6.0.1/decompile.tgz`. To register a different
+with `…/releases/download/v0.0.1/decompile.tgz`. To register a different
 spec (e.g. `decompile@latest` from the npm registry), set
 `DECOMPILE_NPX_SPEC` before `setup --npx`.
 

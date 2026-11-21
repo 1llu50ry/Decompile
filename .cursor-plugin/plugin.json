@@ -2,7 +2,7 @@
   "$schema": "https://cursor.sh/schemas/plugin.json",
   "name": "decompile",
   "displayName": "decompile",
-  "version": "6.0.1",
+  "version": "0.0.1",
   "description": "Reverse-engineering MCP for Cursor: 230+ native tools (PE / ELF / Mach-O / DEX / WASM / .NET / ASAR / GGUF / BEAM / Go), 60+ decompiler and debugger backend bridges, 6,000+ skills catalog, structured findings with evidence and unknowns.",
   "author": "decompile maintainers",
   "license": "MIT",

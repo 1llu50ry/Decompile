@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to create (e.g. v6.0.0)'
+        description: 'Tag to create (e.g. v0.0.1)'
         required: true
 
 jobs:

@@ -35,7 +35,7 @@ Then restart your agent. Done.
 
 ## Project status
 
-- **Version:** 6.0.0
+- **Version:** 0.0.1
 - **License:** MIT
 - **Catalog:** 6,087 skills, 194 agents, 163 subagents, 193 plugins, 3,349 prompts
 - **Tools:** 230+ MCP tools, 60+ backend bridges

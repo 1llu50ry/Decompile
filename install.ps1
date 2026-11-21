@@ -9,7 +9,7 @@
 #
 # Environment overrides:
 #   $env:PREFIX          install prefix                     (default: ~\.decompile)
-#   $env:VERSION         release tag, e.g. v6.0.0           (default: latest)
+#   $env:VERSION         release tag, e.g. v0.0.1           (default: latest)
 #   $env:CHANNEL         'prerelease' = newest incl. pre-releases
 #   $env:METHOD          auto | binary | npm | npx          (default: auto)
 #   $env:SKIP_SETUP      '1' = install only
@@ -24,7 +24,7 @@
 #   $env:DECOMPILE_NPX_SPEC  package for -Method npm|npx (default: the release's decompile.tgz)
 #
 # Or download it and pass parameters:
-#   .\install.ps1 -Version v6.0.0 -SkipSetup
+#   .\install.ps1 -Version v0.0.1 -SkipSetup
 #   .\install.ps1 -Method npx
 #   .\install.ps1 -DryRun
 #   .\install.ps1 -InstallNode
@@ -74,7 +74,7 @@ $DownloadBase = Pick $env:DECOMPILE_DOWNLOAD_BASE $null "https://github.com/$Own
 
 if ($Method -notin 'auto', 'binary', 'npm', 'npx') { throw "METHOD must be auto|binary|npm|npx (got '$Method')" }
 if ($Version -match '^\d') { $Version = "v$Version" }
-if ($Version -ne 'latest' -and $Version -notmatch '^v\d+\.\d+\.\d+') { throw "VERSION must be 'latest' or a release tag like v6.0.0 (got '$Version')" }
+if ($Version -ne 'latest' -and $Version -notmatch '^v\d+\.\d+\.\d+') { throw "VERSION must be 'latest' or a release tag like v0.0.1 (got '$Version')" }
 
 $BinDir = Join-Path $Prefix 'bin'
 $Exe    = Join-Path $BinDir 'decompile.exe'

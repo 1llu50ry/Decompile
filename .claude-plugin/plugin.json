@@ -3,7 +3,7 @@
   "name": "decompile",
   "displayName": "decompile",
   "description": "One MCP for reverse engineering across binaries, applications, and runtime behavior. Native parsers, decompiler and debugger bridges, instrumentation, and a 6,000+ skills catalog.",
-  "version": "6.0.1",
+  "version": "0.0.1",
   "author": {
     "name": "decompile maintainers",
     "url": "https://github.com/1llu50ry/decompile"

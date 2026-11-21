@@ -6,7 +6,7 @@
 
 **230+ MCP 工具 · 60+ RE/debug 后端 · 9 个主机侧插件 · 6,000+ 技能 · 190+ 智能体 · 160+ 子智能体 · 190+ 插件 · 3,000+ 提示词 · 多智能体 mesh · 原生 x86-64 + ARM64 模拟器**
 
-[![version](https://img.shields.io/badge/version-6.0.0-blue)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.0.1-blue)](CHANGELOG.md)
 [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/)
 [![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/)
 [![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts)

@@ -6,7 +6,7 @@
 
 **230+ MCP-инструментов · 60+ RE/debug-бэкендов · 9 host-side плагинов · 6 000+ скиллов · 190+ агентов · 160+ субагентов · 190+ плагинов · 3 000+ промптов · мульти-агентный mesh · нативные x86-64 + ARM64 эмуляторы**
 
-[![version](https://img.shields.io/badge/version-6.0.0-blue)](CHANGELOG.md)
+[![version](https://img.shields.io/badge/version-0.0.1-blue)](CHANGELOG.md)
 [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/)
 [![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/)
 [![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts)

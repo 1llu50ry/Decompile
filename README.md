@@ -164,17 +164,6 @@ The game-hacking framing is historical — the tooling covers every RE disciplin
 | 🔧 **Firmware / IoT** | ELF + Qiling + Unicorn + angr for embedded. | [docs/verticals/firmware-iot.md](docs/verticals/firmware-iot.md) |
 | 🏁 **CTF / exploit development** | pwndbg + GEF + angr + AFL++ + honggfuzz + LibAFL + Unicorn + ret-sync all behind one hub. | [docs/verticals/ctf-pwn.md](docs/verticals/ctf-pwn.md) |
 
-## Comparison
-
-| Project | Scope | Tools | Backends | Multi-agent | Skills archive |
-|---|---|---:|---:|:---:|---:|
-| **decompile** (this repo) | Game RE + anti-cheat + mesh orchestration | **111** | **59** | ✅ | **4,200+** |
-| [GhydraMCP](https://github.com/TeskesLab/GhydraMCP) | Ghidra bridge (multi-instance, HATEOAS REST) | ~20 | 1 | — | — |
-| [ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp) | IDA bridge | ~50 | 1 | — | — |
-| [SuperghidraMCP](https://github.com/yuatemycat/SuperGhidraMCP) | pyghidra | 38 | 1 | — | — |
-| [](https://) | Cross-stack RE (native + Electron + .NET) | ~40 | 3 | — | — |
-| [Vibe-RE](https://github.com/wit-x/Vibe-Reverse-Engineering) | PE triage pipeline | ~30 | 1 | — | — |
-
 ## Ethics & responsible use
 
 This project exists for **security research, cheat detection, defensive engineering, game-preservation, and reverse-engineering education**. Specifically:

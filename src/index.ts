@@ -34,6 +34,7 @@ import { registerSignatureDb } from "./signature-db.js";
 import { observabilityHandler, metrics, renderPrometheus } from "./observability.js";
 import { onShutdown, installSignalHandlers, isDraining } from "./shutdown.js";
 import { wrapToolError, cleanErrorMessage } from "./error-sanitizer.js";
+import { createHarness, harnessDir, type Capability } from "./harness.js";
 import { registerNativeR2 } from "./native-r2.js";
 import { registerAntiRe } from "./native-antire.js";
 import { registerNativeLldb } from "./native-lldb.js";
@@ -606,6 +607,44 @@ const server = new McpServer({
     "decompile exposes 180+ tools for binary RE: Ghidra/IDA/Binja/CE/ReClass/dnSpy/x64dbg bridges, Frida dynamic instrumentation, native PE/ELF/Mach-O/DEX/.NET/Unity/UE/IL2CPP parsers, YARA, FLIRT-light signatures, native x86-64 + ARM64 emulators, agent-mesh (multi-model chat), MCP hub (smart decompile fail-over), content-addressable decompile cache. Prefer the `smart_*` composite tools when uncertain which backend to use. Use `cache_stats` + `chunk_fetch` for large results.",
 });
 
+// ============================================================
+// CODE HARNESS CAPABILITIES (`run` tool, harness.ts)
+// ============================================================
+// Every tool registered on `server` is also collected here, so the `run`
+// tool can call it from code: `await pe_parse({ path })`. The harness
+// unwraps the MCP result: the text comes back as a string, and an isError
+// result throws.
+const capabilities: Capability[] = [];
+
+function captureCapability(
+  name: string,
+  description: string,
+  shape: z.ZodRawShape,
+  handler: (...xs: unknown[]) => unknown,
+): void {
+  if (name === "run") return; // the harness never calls itself
+  const schema = z.object(shape);
+  capabilities.push({
+    name,
+    description,
+    schema: shape as Record<string, unknown>,
+    prepare(args) {
+      const parsed = schema.safeParse(args ?? {});
+      if (!parsed.success) {
+        const issues = parsed.error.issues
+          .map((issue) => `${issue.path.join(".") || "arguments"}: ${issue.message}`)
+          .join("; ");
+        throw new Error(`${name}: ${issues}`);
+      }
+      return parsed.data as Record<string, unknown>;
+    },
+    // The harness unwraps the MCP result itself (text, isError → throw).
+    async handler(args) {
+      return handler(args, {});
+    },
+  });
+}
+
 // Wrap server.tool so every registered handler feeds the observability
 // counters + latency histogram. Previously only HTTP-middleware wrote to
 // metrics; /dashboard's "top tools" and the Prometheus
@@ -630,6 +669,8 @@ const server = new McpServer({
   //      the raw text + stack is still logged to stderr with a
   //      trace-id so operators can grep the real exception, and the
   //      client gets a non-leaky summary + the same trace-id.
+  //   3. Every tool is also captured as a code-harness capability, so the
+  //      `run` tool can call any of them from code (see harness.ts).
   const origTool = server.tool.bind(server);
   (server as unknown as { tool: (...a: unknown[]) => unknown }).tool = (...args: unknown[]) => {
     const i = args.findIndex(a => typeof a === "function");
@@ -639,6 +680,10 @@ const server = new McpServer({
       // arg is conventionally the description string in this file.
       const desc = typeof args[1] === "string" ? args[1] : undefined;
       recordTool(name, desc);
+      // Also expose it to the code harness (`run`), with its zod shape so a
+      // call from code is validated exactly like an MCP call.
+      const shapeArg = args.slice(1, i).find((a) => a !== null && typeof a === "object") as z.ZodRawShape | undefined;
+      captureCapability(name, desc ?? "", shapeArg ?? {}, args[i] as (...xs: unknown[]) => unknown);
       const orig = args[i] as (...xs: unknown[]) => unknown;
       args[i] = async (...xs: unknown[]) => {
         const t0 = performance.now();
@@ -2039,6 +2084,7 @@ registerNativePePatch(server);
 registerNativePcap(server);
 registerToolMeta(server);
 
+
 // SQLite-backed skills store: ships a single db/skills.db alongside
 // dist/, replacing the 19 GiB on-disk tree with a ~20 MiB queryable
 // file. `db_search` is FTS5 (bm25 ranking) over every skill name +
@@ -2223,6 +2269,73 @@ async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     onShutdown("stdio-transport", () => transport.close?.());
+  }
+}
+
+// ============================================================
+// `run` — the code harness (ported from the drvova fork of this repo)
+// ============================================================
+// Registered last (after every register*/server.tool above), so every tool
+// is a capability. Unlike the fork,
+// the individual tools stay: `run` is an additional, code-first interface.
+// Disable with MCP_CODE_HARNESS=0.
+if (process.env.MCP_CODE_HARNESS !== "0") {
+  const harness = createHarness(capabilities, {
+    dir: harnessDir("DECOMPILE", "decompile"),
+    open: async (name: string) => {
+      const slash = name.indexOf("/");
+      if (slash > 0) {
+        const dir = (DIRS as Record<string, string | undefined>)[`${name.slice(0, slash).toLowerCase()}s`];
+        const rest = name.slice(slash + 1);
+        const parsed = dir ? await readMdByName(dir, rest) : null;
+        return parsed ? { text: parsed.body, path: join(dir!, `${rest}.md`), source: null } : null;
+      }
+      const skill = await readSkill(name);
+      if (skill) {
+        const source = join(DIRS.skills, name, "source.txt");
+        return { text: skill.body, path: join(DIRS.skills, name, "SKILL.md"), source: (await fileExists(source)) ? source : null };
+      }
+      try {
+        const db = await (await import("./skills-db.js")).getSharedDb(process.env.MCP_SKILLS_DB ?? join(ROOT, "db", "skills.db"));
+        const row = db ? (await import("./skills-db.js")).getSkill(db, name) : null;
+        if (row) return { text: row.body, path: null, source: null };
+      } catch { /* no DB — fall through */ }
+      for (const dir of [DIRS.agents, DIRS.subagents, DIRS.plugins, DIRS.prompts]) {
+        const parsed = await readMdByName(dir, name);
+        if (parsed) return { text: parsed.body, path: join(dir, `${name}.md`), source: null };
+      }
+      return null;
+    },
+    offers: () => capabilities.map((c) => c.name),
+  });
+
+  server.tool(
+    "run",
+    "Run JavaScript against this server's API in a persistent namespace. Every other decompile tool is a function here: " +
+      '`await pe_parse({ path: "a.exe" })`, `await search_skills({ query: "ept hook" })` — compose them, loop, filter, ' +
+      "and keep helpers: definitions persist across calls and restarts; work does not.\n\n" +
+      "Call with empty code for the manual. `describe(x)` shows a function's arguments.\n\n" +
+      "SECURITY: executes code with the server's authority (like a shell). Disable with MCP_CODE_HARNESS=0.",
+    {
+      code: z.string().default("").describe("Code to run. Empty returns the manual. A trailing expression is returned."),
+      session_id: z.string().default("").describe("Working-object scope. Omit for the default session."),
+      strings: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe("Named strings available as S, so long or literal text is passed as data instead of escaped inside code."),
+    },
+    async ({ code, session_id, strings }: { code: string; session_id: string; strings?: Record<string, unknown> }) => {
+      try {
+        return ok(await harness.run(code, session_id, strings ?? {}));
+      } catch (error) {
+        return err(error instanceof Error ? error.message : String(error));
+      }
+    },
+  );
+
+  const broken = harness.load();
+  if (broken.length > 0) {
+    process.stderr.write(`harness: ${broken.length} saved definition(s) failed to load:\n${broken.map((e) => `  ${e}`).join("\n")}\n`);
   }
 }
 

@@ -104,12 +104,13 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2"
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "acorn": "^8.19.0"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
+    "@types/node": "^26.6.6",
     "tsx": "^4.19.0",
-    "@types/node": "^26.6.6"
+    "typescript": "^7.0.2"
   },
   "overrides": {
     "hono": "^4.13.18",

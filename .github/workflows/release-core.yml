@@ -342,10 +342,11 @@ jobs:
           test -f flat/decompile-x86_64-pc-windows-msvc.zip || { echo "::error::primary target missing: windows x64"; exit 1; }
 
           # Installers attached to a release install *that* release by default.
-          sed 's|^VERSION="${VERSION:-latest}" # @release-pin$|VERSION="${VERSION:-'"$TAG"'}" # @release-pin|' install.sh > flat/install.sh
-          sed "s|^\$DefaultVersion = 'latest' # @release-pin\$|\$DefaultVersion = '$TAG' # @release-pin|" install.ps1 > flat/install.ps1
-          grep -q "VERSION:-$TAG}" flat/install.sh
-          grep -q "DefaultVersion = '$TAG'" flat/install.ps1
+          # No end-of-line anchor: install.ps1 is checked out with CRLF (.gitattributes).
+          sed 's|^VERSION="${VERSION:-latest}" # @release-pin|VERSION="${VERSION:-'"$TAG"'}" # @release-pin|' install.sh > flat/install.sh
+          sed "s|^\$DefaultVersion = 'latest' # @release-pin|\$DefaultVersion = '$TAG' # @release-pin|" install.ps1 > flat/install.ps1
+          grep -q "VERSION:-$TAG}" flat/install.sh || { echo "::error::failed to pin install.sh to $TAG"; exit 1; }
+          grep -q "DefaultVersion = '$TAG'" flat/install.ps1 || { echo "::error::failed to pin install.ps1 to $TAG"; exit 1; }
           sh -n flat/install.sh
           chmod 0755 flat/install.sh
 

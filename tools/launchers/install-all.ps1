@@ -29,7 +29,7 @@ Say "npm-based backends"
 npm install -g r2mcp rea-agents
 
 Say "External downloads (manual):"
-Write-Host " - GhidraMCP:      https://github.com/LaurieWired/GhidraMCP"
+Write-Host " - GhydraMCP:      https://github.com/TeskesLab/GhydraMCP"
 Write-Host " - Hex-Rays IDA:   https://github.com/HexRaysSA/ida-mcp"
 Write-Host " - x64dbg plugin:  https://github.com/duty1g/x64dbg-mcp-server/releases"
 Write-Host " - dnSpyEx:        https://github.com/dnSpyEx/dnSpy/releases"

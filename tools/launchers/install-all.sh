@@ -26,7 +26,7 @@ npm install -g r2mcp rea-agents
 
 say "External downloads (manual):"
 cat <<'EOF'
- - GhidraMCP:      https://github.com/LaurieWired/GhidraMCP
+ - GhydraMCP:      https://github.com/TeskesLab/GhydraMCP
  - Hex-Rays IDA:   https://github.com/HexRaysSA/ida-mcp
  - dnSpyEx:        https://github.com/dnSpyEx/dnSpy/releases   (Windows only)
  - ReClass.NET:    https://github.com/ReClassNET/ReClass.NET   (Windows only)

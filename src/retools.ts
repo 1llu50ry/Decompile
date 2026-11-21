@@ -156,14 +156,14 @@ interface RunningProc {
 const BACKENDS: Record<ReBackendId, ReBackend> = {
   "ghidra-mcp": {
     id: "ghidra-mcp",
-    name: "GhidraMCP (LaurieWired)",
+    name: "GhydraMCP (TeskesLab)",
     kind: "static",
     os: ["windows", "linux", "macos"],
-    requires: "Ghidra 11+ with the GhidraMCP extension installed (loads a Jetty HTTP server inside the Ghidra JVM on port 8080 by default).",
+    requires: "Ghidra 11+ with the GhydraMCP extension installed (multi-instance HATEOAS REST API + MCP bridge).",
     install: [
-      "git clone https://github.com/LaurieWired/GhidraMCP",
-      "copy GhidraMCP.zip to <ghidra>/Extensions/Ghidra, then File > Install Extensions in the Ghidra GUI",
-      "install the Python bridge: `pip install mcp-ghidra`",
+      "git clone https://github.com/TeskesLab/GhydraMCP",
+      "copy GhydraMCP.zip to <ghidra>/Extensions/Ghidra, then File > Install Extensions in the Ghidra GUI",
+      "install the Python bridge from the repo's README",
     ],
     launch: {
       cmd: "python",

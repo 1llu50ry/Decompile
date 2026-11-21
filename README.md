@@ -147,7 +147,7 @@ The game-hacking framing is historical — the tooling covers every RE disciplin
 | Project | Scope | Tools | Backends | Multi-agent | Skills archive |
 |---|---|---:|---:|:---:|---:|
 | **decompile** (this repo) | Game RE + anti-cheat + mesh orchestration | **111** | **59** | ✅ | **4,200+** |
-| [GhidraMCP](https://github.com/LaurieWired/GhidraMCP) | Ghidra bridge | 5 | 1 | — | — |
+| [GhydraMCP](https://github.com/TeskesLab/GhydraMCP) | Ghidra bridge (multi-instance, HATEOAS REST) | ~20 | 1 | — | — |
 | [ida-pro-mcp](https://github.com/mrexodia/ida-pro-mcp) | IDA bridge | ~50 | 1 | — | — |
 | [SuperghidraMCP](https://github.com/yuatemycat/SuperGhidraMCP) | pyghidra | 38 | 1 | — | — |
 | [](https://) | Cross-stack RE (native + Electron + .NET) | ~40 | 3 | — | — |
@@ -297,7 +297,7 @@ Read [SECURITY.md](SECURITY.md) for responsible disclosure. By contributing you 
 
 ### RE / Debug MCP Integrations (v4.1)
 
-Launch and drive **43** external RE and debugging MCP servers directly from this server. Supported backends: **GhidraMCP, SuperghidraMCP (pyghidra-mcp, +gui), Ghidrathon MCP, ida-pro-mcp, Hex-Rays IDA MCP, Binary Ninja MCP, radare2 MCP, x64dbg MCP Server, WinDbg MCP, Cheat Engine MCP, Frida MCP, Hopper MCP, Vibe-RE, JADX MCP, angr MCP, Capstone MCP, PCILeech/MemProcFS MCP, Memflow MCP, Scylla MCP, dnSpyEx MCP, ReClass.NET MCP, Volatility3 MCP, Wireshark/tshark MCP, mitmproxy MCP, dotPeek MCP, Unicorn MCP, ret-sync MCP, BinDiff MCP, Diaphora MCP, Qiling MCP, unidbg MCP, Reko (OpenReality) MCP, QEMU trace MCP, LLDB MCP, GDB MCP, Burp MCP, YARA MCP, ClrMD MCP, Binja-Ghidra sync MCP, Dolphin DME MCP, Cemu IPC MCP**.
+Launch and drive **43** external RE and debugging MCP servers directly from this server. Supported backends: **GhydraMCP, SuperghidraMCP (pyghidra-mcp, +gui), Ghidrathon MCP, ida-pro-mcp, Hex-Rays IDA MCP, Binary Ninja MCP, radare2 MCP, x64dbg MCP Server, WinDbg MCP, Cheat Engine MCP, Frida MCP, Hopper MCP, Vibe-RE, JADX MCP, angr MCP, Capstone MCP, PCILeech/MemProcFS MCP, Memflow MCP, Scylla MCP, dnSpyEx MCP, ReClass.NET MCP, Volatility3 MCP, Wireshark/tshark MCP, mitmproxy MCP, dotPeek MCP, Unicorn MCP, ret-sync MCP, BinDiff MCP, Diaphora MCP, Qiling MCP, unidbg MCP, Reko (OpenReality) MCP, QEMU trace MCP, LLDB MCP, GDB MCP, Burp MCP, YARA MCP, ClrMD MCP, Binja-Ghidra sync MCP, Dolphin DME MCP, Cemu IPC MCP**.
 
 | Tool | Description |
 |------|------------|

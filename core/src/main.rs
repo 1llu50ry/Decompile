@@ -57,6 +57,10 @@ enum Cmd {
         /// Force a local-path registration pointing at this clone.
         #[arg(long)]
         local: bool,
+        /// Register only — skip installing the RE programs (Ghidra + JDK,
+        /// radare2, x64dbg, UPX, Python env) that setup installs by default.
+        #[arg(long)]
+        minimal: bool,
     },
     /// Remove registrations written by setup.
     Uninstall {
@@ -91,14 +95,38 @@ enum Cmd {
         /// Extra args forwarded to the server.
         args: Vec<String>,
     },
+    /// Download and wire up RE programs: Ghidra + JDK, radare2, x64dbg, UPX,
+    /// a Python env with frida/angr/capstone/… (delegates to the Node CLI).
+    /// `decompile retools status | install [ids…|--all] [--dry-run] | env | list`
+    #[command(disable_help_flag = true, alias = "re-tools")]
+    Retools {
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        args: Vec<String>,
+    },
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let root = resolve_root(cli.root.clone())?;
     match cli.cmd {
-        Cmd::Setup { client, all_detected, interactive, dry_run, npx, local } => {
-            setup::run(&root, &client, all_detected, interactive, dry_run, setup::Mode::from_flags(npx, local))
+        Cmd::Setup { client, all_detected, interactive, dry_run, npx, local, minimal } => {
+            setup::run(&root, &client, all_detected, interactive, dry_run, setup::Mode::from_flags(npx, local))?;
+            // One command sets up everything: after registering the agents,
+            // install the RE programs the tools drive. --minimal skips it.
+            if dry_run || std::env::var("DECOMPILE_SETUP_RETOOLS").as_deref() == Ok("0") {
+                return Ok(());
+            }
+            if minimal {
+                println!("RE tools skipped (--minimal). Install later: decompile retools install");
+                return Ok(());
+            }
+            println!("
+installing RE tools (skip with --minimal) …");
+            if let Err(e) = node_cli_status(&root, "retools", &["install".into(), "--all".into()]) {
+                println!("RE tools not installed: {e:#}
+retry: decompile retools install");
+            }
+            Ok(())
         }
         Cmd::Uninstall { client, all_detected, interactive, dry_run } => {
             setup::uninstall(&root, &client, all_detected, interactive, dry_run)
@@ -110,6 +138,7 @@ fn main() -> Result<()> {
         Cmd::Analyze { path } => analyze::run(&path, false),
         Cmd::Inspect { path } => analyze::run(&path, true),
         Cmd::Serve { args } => serve(&root, &args),
+        Cmd::Retools { args } => node_cli(&root, "retools", &args),
     }
 }
 
@@ -146,6 +175,41 @@ fn serve(root: &std::path::Path, args: &[String]) -> Result<()> {
         .status()
         .with_context(|| format!("failed to spawn node {}", entry.display()))?;
     std::process::exit(status.code().unwrap_or(0));
+}
+
+/// Run a Node CLI subcommand and return (instead of exiting) — non-zero is an error.
+fn node_cli_status(root: &std::path::Path, sub: &str, args: &[String]) -> Result<()> {
+    let cli = root.join("bin").join("decompile-node.mjs");
+    if !cli.exists() {
+        bail!("missing {}", cli.display());
+    }
+    let status = std::process::Command::new(node_cmd())
+        .arg(&cli)
+        .arg(sub)
+        .args(args)
+        .env("MCP_PROJECT_ROOT", root)
+        .status()
+        .with_context(|| "failed to spawn node (Node.js >= 24 required)".to_string())?;
+    if !status.success() {
+        bail!("{} {} exited with {}", sub, args.join(" "), status.code().unwrap_or(-1));
+    }
+    Ok(())
+}
+
+/// Run a subcommand implemented by the Node CLI (bin/decompile-node.mjs).
+fn node_cli(root: &std::path::Path, sub: &str, args: &[String]) -> Result<()> {
+    let cli = root.join("bin").join("decompile-node.mjs");
+    if !cli.exists() {
+        bail!("missing {} — reinstall decompile", cli.display());
+    }
+    let status = std::process::Command::new(node_cmd())
+        .arg(&cli)
+        .arg(sub)
+        .args(args)
+        .env("MCP_PROJECT_ROOT", root)
+        .status()
+        .with_context(|| format!("failed to spawn node {} (Node.js >= 24 required)", cli.display()))?;
+    std::process::exit(status.code().unwrap_or(1));
 }
 
 pub fn node_cmd() -> &'static str {

@@ -114,6 +114,40 @@ pub fn run(root: &Path) -> Result<()> {
         println!("  {} {}: {}", if *ok { "+" } else { "-" }, name, note);
     }
 
+    // RE programs installed by `decompile retools install` (env.json).
+    println!("\n## re-tools");
+    let tools_home = std::env::var_os("DECOMPILE_TOOLS_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| crate::home_dir().map(|h| h.join(".decompile").join("tools")));
+    let env_json = tools_home.as_ref().map(|h| h.join("env.json"));
+    match env_json
+        .as_ref()
+        .and_then(|p| fs::read_to_string(p).ok())
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+    {
+        Some(v) => {
+            let mut missing = 0;
+            if let Some(env) = v.get("env").and_then(|e| e.as_object()) {
+                for (k, val) in env {
+                    let p = val.as_str().unwrap_or_default();
+                    let exists = Path::new(p).exists();
+                    if !exists {
+                        missing += 1;
+                    }
+                    println!("  {} {}: {}", if exists { "+" } else { "-" }, k, p);
+                }
+            }
+            let n_path = v.get("path").and_then(|p| p.as_array()).map(|a| a.len()).unwrap_or(0);
+            println!("  · {} PATH entries for the server (python, java, radare2, …)", n_path);
+            if missing > 0 {
+                println!("  {} path(s) missing — re-run: decompile retools install", missing);
+            }
+        }
+        None => println!(
+            "  - not installed — run: decompile retools install   (Ghidra + JDK, radare2, UPX, x64dbg, Python RE env)"
+        ),
+    }
+
     println!("\n## agents");
     for (c, p) in &registered {
         println!("  + {} registered: {}", c, p);

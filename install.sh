@@ -55,6 +55,7 @@ SKIP_SETUP="${SKIP_SETUP:-0}"
 SETUP_ARGS="${SETUP_ARGS:--i}"
 NO_MODIFY_PATH="${NO_MODIFY_PATH:-0}"
 INSTALL_NODE="${INSTALL_NODE:-0}"
+MINIMAL="${MINIMAL:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 VERBOSE="${VERBOSE:-0}"
 DOWNLOAD_BASE="${DECOMPILE_DOWNLOAD_BASE:-https://github.com/$OWNER/$REPO/releases}"
@@ -89,6 +90,10 @@ usage: install.sh [options]
   --no-setup          don't run `decompile setup` (aliases: --skip-setup, --no-prompt)
   --setup-args ARGS   arguments for `decompile setup` (default: -i)
   --no-modify-path    don't edit shell rc files
+  --minimal           core only: skip the RE programs (Ghidra + JDK, radare2,
+                        UPX, Python env with frida/angr/capstone/…, ~1.5 GB)
+                        that are installed by default; add later with
+                        `decompile retools install`
   --install-node      install Node.js 24 if it's missing / too old
                         (Homebrew on macOS if present, pkg on Termux, fnm otherwise)
   --dry-run           print the install plan and exit without changing anything
@@ -116,6 +121,7 @@ while [ $# -gt 0 ]; do
     --method=*)        METHOD="${1#*=}"; shift ;;
     --skip-setup|--no-setup|--no-prompt) SKIP_SETUP=1; shift ;;
     --install-node)    INSTALL_NODE=1; shift ;;
+    --minimal)         MINIMAL=1; shift ;;
     --dry-run)         DRY_RUN=1; shift ;;
     --verbose)         VERBOSE=1; shift ;;
     --setup-args)      [ $# -ge 2 ] || die "$1 needs a value"; SETUP_ARGS="$2"; shift 2 ;;
@@ -277,6 +283,8 @@ print_plan() {
     esac
     if [ "$SKIP_SETUP" = 1 ]; then printf '  Setup:    skipped\n'
     else printf '  Setup:    decompile setup %s (when a terminal is available)\n' "$SETUP_ARGS"; fi
+    if [ "$MINIMAL" = 1 ]; then printf '  RE tools: skipped (--minimal); later: decompile retools install\n'
+    else printf '  RE tools: Ghidra + JDK, radare2, UPX, Python env (frida, angr, capstone, …) → ~/.decompile/tools (~1.5 GB)\n'; fi
   } >&2
 }
 
@@ -292,23 +300,42 @@ verify_version() { # $1 = command, $2 = tag
 
 # Run `decompile setup` with the controlling terminal as stdin: under
 # `curl | sh` our stdin is the script itself, so -i would read garbage.
+# `decompile setup` registers the agents AND installs the RE tools (Ghidra,
+# radare2, Python env…) in one go; --minimal is passed through to skip them.
+# SETUP_RAN tells run_retools whether setup already covered the RE tools.
+SETUP_RAN=0
 run_setup() { # $@ = command prefix, e.g. "$LAUNCHER" or "npx -y decompile@latest"
   [ "$SKIP_SETUP" = 1 ] && { say "skipping setup (SKIP_SETUP=1). Later: decompile setup -i"; return 0; }
+  extra=''
+  [ "$MINIMAL" = 1 ] && extra='--minimal'
   # shellcheck disable=SC2086
-  set -- "$@" setup $SETUP_ARGS
+  set -- "$@" setup $SETUP_ARGS $extra
   say "running: $*"
   if [ -t 0 ]; then
-    "$@" || warn "setup exited non-zero — rerun: $*"
+    SETUP_RAN=1; "$@" || warn "setup exited non-zero — rerun: $*"
   elif (exec </dev/tty) 2>/dev/null; then
-    "$@" </dev/tty || warn "setup exited non-zero — rerun: $*"
+    SETUP_RAN=1; "$@" </dev/tty || warn "setup exited non-zero — rerun: $*"
   else
     case " $SETUP_ARGS " in
       *" -i "*|*" --interactive "*)
         warn "no terminal available for the interactive picker; skipping."
         warn "run later: $* (or SETUP_ARGS=--all-detected)" ;;
-      *) "$@" </dev/null || warn "setup exited non-zero — rerun: $*" ;;
+      *) SETUP_RAN=1; "$@" </dev/null || warn "setup exited non-zero — rerun: $*" ;;
     esac
   fi
+}
+
+# Install the RE programs the server drives (default; --minimal skips).
+# Needs Node.js: `retools` is part of the Node CLI.
+run_retools() { # $@ = command prefix, as for run_setup
+  [ "$SETUP_RAN" = 1 ] && return 0   # setup already installed them
+  if [ "$MINIMAL" = 1 ]; then say "skipping RE tools (--minimal). Later: decompile retools install"; return 0; fi
+  if [ "$(node_major)" -lt "$MIN_NODE_MAJOR" ] 2>/dev/null; then
+    warn "RE tools need Node.js >= $MIN_NODE_MAJOR — install it, then run: decompile retools install"
+    return 0
+  fi
+  say "installing RE tools: $* retools install --all"
+  "$@" retools install --all </dev/null || warn "some RE tools did not install — see the summary above; retry: decompile retools install"
 }
 
 # ------------------------------------------------------ target detect ---
@@ -503,6 +530,7 @@ EOF
   check_node soft || true
   ensure_path
   run_setup "$LAUNCHER"
+  run_retools "$LAUNCHER"
   return 0
 }
 
@@ -520,6 +548,7 @@ install_npm() {
   ok "installed via npm: $cmd"
   verify_version "$cmd" "$VERSION"
   run_setup "$cmd"
+  run_retools "$cmd"
 }
 
 install_npx() {
@@ -535,6 +564,7 @@ install_npx() {
     return 0
   fi
   run_setup npx -y "$spec"
+  run_retools npx -y "$spec"
 }
 
 uninstall_all() {

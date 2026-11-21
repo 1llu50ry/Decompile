@@ -108,7 +108,38 @@ powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/1ll
 
 6. Adds the command to `PATH` (bash / zsh / fish rc files; Windows user PATH).
 7. Checks Node.js and prints the per-OS fix if it's missing (step 1).
-8. Starts `decompile setup -i` when a terminal is available (step 3).
+8. Starts `decompile setup -i` when a terminal is available (step 3) — which also
+   installs **all RE programs** (next section). `--minimal` / `-Minimal` skips them.
+
+### RE programs (installed by default)
+
+`decompile setup` — and therefore every one-line install, including npx — finishes
+with `decompile retools install --all`. Everything goes to `~/.decompile/tools`
+(`DECOMPILE_TOOLS_HOME` to move it), from official sources only, each component on
+its own so one failure never blocks the rest:
+
+| Component | What | Source |
+|---|---|---|
+| `uv` + `python` | Python 3.12 env with frida, frida-tools, capstone, keystone-engine, unicorn, lief, r2pipe, pyghidra, angr, volatility3, yara-python, mitmproxy, ROPGadget | astral-sh/uv, PyPI (authorship checked) |
+| `jdk` | Java 21 (Temurin) for Ghidra | Adoptium |
+| `ghidra` | Ghidra + our bridge script in `~/ghidra_scripts` | NationalSecurityAgency/ghidra |
+| `radare2` | powers the `r2_*` tools | radareorg/radare2 (Windows zip; Homebrew; source build on Linux) |
+| `upx` | unpacker for the triage tools | upx/upx (Windows, Linux) |
+| `x64dbg` | Windows debugger | x64dbg/x64dbg |
+| `fakepdb` | IDA plugin for `fakepdb_*` | Mixaill/FakePDB (Apache-2.0) |
+| `plugins` | our IDA / Binary Ninja / Cheat Engine bridges — only if the program is installed | this repo (`plugins-side/`) |
+| `debuggers` | gdb / lldb for `gdb_*` / `lldb_*` — checked, installed by your OS package manager | system |
+
+Afterwards `env.json` holds `GHIDRA_INSTALL_DIR`, `JAVA_HOME`, `MCP_R2_BIN`,
+`MCP_UPX_BIN`, … and the tool directories; the MCP server loads it at start-up
+(your own environment variables always win). Manage it later with:
+
+```bash
+decompile retools status            # what's installed, what's missing
+decompile retools install ghidra    # one component (dependencies come along)
+decompile retools install --dry-run # the plan only
+decompile retools env               # print the environment the server uses
+```
 
 If there's no prebuilt bundle for your device, it falls back to
 `npm install -g https://github.com/1llu50ry/Decompile/releases/latest/download/decompile.tgz`.
@@ -230,6 +261,7 @@ agent plugin manifests. Only Node.js is external. Anything not listed
 | `--setup-args "…"` | `-SetupArgs "…"` | `SETUP_ARGS` | Args for `decompile setup` (default `-i`) |
 | `--no-modify-path` | `-NoModifyPath` | `NO_MODIFY_PATH=1` | Don't touch rc files / user PATH |
 | `--install-node` | `-InstallNode` | `INSTALL_NODE=1` | Install Node.js 24 if missing / too old |
+| `--minimal` | `-Minimal` | `MINIMAL=1` | Core only — skip the RE programs (Ghidra + JDK, radare2, UPX, x64dbg, Python env) |
 | `--dry-run` | `-DryRun` | `DRY_RUN=1` | Print the install plan, change nothing |
 | `--verbose` | `-Verbose` | `VERBOSE=1` | Trace every step |
 | `--uninstall` | `-Uninstall` | `DECOMPILE_UNINSTALL=1` (ps1) | Remove everything the installer added |

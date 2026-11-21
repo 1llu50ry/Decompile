@@ -1,3 +1,6 @@
+// Must stay the first import: wires the RE programs installed by
+// `decompile retools install` (env.json) into process.env before anything reads it.
+import "./tools-env.js";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";

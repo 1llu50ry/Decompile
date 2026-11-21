@@ -16,6 +16,8 @@
 #   $env:SETUP_ARGS      args for `decompile setup`         (default: -i)
 #   $env:NO_MODIFY_PATH  '1' = don't touch the user PATH
 #   $env:INSTALL_NODE    '1' = install Node.js LTS with winget if missing / too old
+#   $env:MINIMAL         '1' = core only; skip the RE programs installed by default
+#                        (Ghidra + JDK, radare2, x64dbg, UPX, Python env, ~1.5 GB)
 #   $env:DRY_RUN         '1' = print the install plan and exit
 #   $env:DECOMPILE_UNINSTALL '1' = remove everything this script installed
 #   $env:DECOMPILE_DOWNLOAD_BASE  mirror for release assets
@@ -41,6 +43,7 @@ param(
   [string]$SetupArgs,
   [switch]$NoModifyPath,
   [switch]$InstallNode,
+  [switch]$Minimal,
   [switch]$DryRun,
   [switch]$Uninstall
 )
@@ -65,6 +68,7 @@ $DoSetup   = -not ($SkipSetup -or $env:SKIP_SETUP -eq '1')
 $ModPath   = -not ($NoModifyPath -or $env:NO_MODIFY_PATH -eq '1')
 $DoUninstall = $Uninstall -or $env:DECOMPILE_UNINSTALL -eq '1'
 $DoInstallNode = $InstallNode -or $env:INSTALL_NODE -eq '1'
+$DoMinimal = $Minimal -or $env:MINIMAL -eq '1'
 $DoDryRun = $DryRun -or $env:DRY_RUN -eq '1'
 $DownloadBase = Pick $env:DECOMPILE_DOWNLOAD_BASE $null "https://github.com/$Owner/$Repo/releases"
 
@@ -158,6 +162,7 @@ function Show-Plan {
     }
   }
   Write-Host ("  Setup:    " + $(if ($DoSetup) { "decompile setup $SetupArgs" } else { 'skipped' }))
+  Write-Host ("  RE tools: " + $(if ($DoMinimal) { 'skipped (-Minimal); later: decompile retools install' } else { 'Ghidra + JDK, radare2, x64dbg, UPX, Python env (frida, angr, capstone, ...) -> ~\.decompile\tools (~1.5 GB)' }))
 }
 
 function Assert-Version([string]$Cmd, [string]$Tag) {
@@ -171,18 +176,36 @@ function Assert-Version([string]$Cmd, [string]$Tag) {
 # of $script: variables: under `& ([scriptblock]::Create((irm ...))) -Args` the
 # script: scope is the *caller's*, so $script:SetupArgs read back empty and
 # `setup` ran without the requested arguments.
-$State = @{ SetupCmd = $null; SetupPre = @(); SetupArgs = $SetupArgs }
+$State = @{ SetupCmd = $null; SetupPre = @(); SetupArgs = $SetupArgs; SetupRan = $false }
 
 # Start-Process -NoNewWindow hands the console straight to the child, so the
 # interactive picker (setup -i) can prompt and read input.
+# `decompile setup` registers the agents AND installs the RE tools in one go;
+# -Minimal is passed through as --minimal. SetupRan stops Invoke-Retools from
+# installing them a second time.
 function Invoke-Setup {
   if (-not $State.SetupCmd) { return }
   $a = @($State.SetupPre) + @('setup') + @($State.SetupArgs -split '\s+' | Where-Object { $_ })
+  if ($DoMinimal) { $a += '--minimal' }
   if (-not $DoSetup) { Say "skipping setup. Later: decompile $($a -join ' ')"; return }
   $exe = (Get-Command $State.SetupCmd -ErrorAction Stop).Source
   Say "running: $($State.SetupCmd) $($a -join ' ')"
+  $State.SetupRan = $true
   $p = Start-Process -FilePath $exe -ArgumentList $a -NoNewWindow -Wait -PassThru
   if ($p.ExitCode -ne 0) { Warn "setup exited with $($p.ExitCode) - rerun: $($State.SetupCmd) $($a -join ' ')" }
+}
+
+# Install the RE programs the server drives (default; -Minimal skips).
+# Uses the same command as setup; needs Node.js (retools is in the Node CLI).
+function Invoke-Retools {
+  if (-not $State.SetupCmd -or $State.SetupRan) { return }
+  if ($DoMinimal) { Say 'skipping RE tools (-Minimal). Later: decompile retools install'; return }
+  if ((Get-NodeMajor) -lt $MinNodeMajor) { Warn "RE tools need Node.js >= $MinNodeMajor - install it, then run: decompile retools install"; return }
+  $a = @($State.SetupPre) + @('retools', 'install', '--all')
+  $exe = (Get-Command $State.SetupCmd -ErrorAction Stop).Source
+  Say "installing RE tools: $($State.SetupCmd) $($a -join ' ')"
+  $p = Start-Process -FilePath $exe -ArgumentList $a -NoNewWindow -Wait -PassThru
+  if ($p.ExitCode -ne 0) { Warn 'some RE tools did not install - see the summary above; retry: decompile retools install' }
 }
 
 function Get-Arch {
@@ -367,6 +390,7 @@ function Invoke-DecompileInstaller {
       }
     }
     Invoke-Setup
+    Invoke-Retools
     Say 'done. Verify (in a new terminal) with: decompile --version; decompile doctor'
   } catch {
     Write-Host "error $($_.Exception.Message)" -ForegroundColor Red

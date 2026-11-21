@@ -1,39 +1,12 @@
-#!/usr/bin/env bash
-# install-all.sh -- bootstrap every optional RE/debug backend on Linux/macOS.
-set +e
-
-say() { printf '\033[1;36m[install-all]\033[0m %s\n' "$*"; }
-
-say "pip-based backends"
-pip install \
-  pyghidra-mcp \
-  ida-pro-mcp \
-  binaryninja-mcp \
-  r2pipe-mcp \
-  frida-tools frida-mcp \
-  hopper-mcp \
-  jadx-mcp \
-  angr angr-mcp \
-  capstone capstone-mcp \
-  volatility3 volatility3-mcp \
-  mitmproxy mitmproxy-mcp \
-  tshark-mcp \
-  unicorn unicorn-mcp \
-  retsync-mcp
-
-say "npm-based backends"
-npm install -g r2mcp rea-agents
-
-say "External downloads (manual):"
-cat <<'EOF'
- - GhydraMCP:      https://github.com/TeskesLab/GhydraMCP
- - Hex-Rays IDA:   https://github.com/HexRaysSA/ida-mcp
- - dnSpyEx:        https://github.com/dnSpyEx/dnSpy/releases   (Windows only)
- - ReClass.NET:    https://github.com/ReClassNET/ReClass.NET   (Windows only)
- - Scylla:         https://github.com/NtQuery/Scylla           (Windows only)
- - x64dbg plugin:  https://github.com/duty1g/x64dbg-mcp-server (Windows only)
- - PCILeech FPGA:  https://github.com/ufrisk/pcileech
- - MemProcFS:      https://github.com/ufrisk/MemProcFS/releases
-EOF
-
-say "Done. Verify with: node dist/index.js and call list_re_backends."
+#!/usr/bin/env sh
+# install-all.sh — install every RE program decompile drives (Linux / macOS).
+# Thin wrapper: the real installer is `decompile retools install`, which
+# downloads Ghidra + JDK, radare2, UPX, FakePDB and a Python env with
+# frida/angr/capstone/unicorn/lief/volatility3/yara/mitmproxy into
+# ~/.decompile/tools, verifies checksums, installs each component on its own
+# and wires everything into the MCP server (env.json).
+set -eu
+here="$(cd "$(dirname "$0")/../.." && pwd)"
+# Prefer the CLI next to this script (a checkout), else the installed command.
+if [ -f "$here/bin/decompile-node.mjs" ]; then exec node "$here/bin/decompile-node.mjs" retools install "$@"; fi
+exec decompile retools install "$@"

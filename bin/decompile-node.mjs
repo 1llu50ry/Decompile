@@ -323,7 +323,7 @@ function clientConfigPath(id) {
 
 function parseClientArgs() {
   const out = [];
-  let allDetected = false, yes = false, dryRun = false, interactive = false;
+  let allDetected = false, yes = false, dryRun = false, interactive = false, minimal = false;
   let mode = "auto"; // auto | npx | local
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
@@ -334,10 +334,11 @@ function parseClientArgs() {
     if (a === "--dry-run" || a === "-n") { dryRun = true; continue; }
     if (a === "--npx") { mode = "npx"; continue; }
     if (a === "--local") { mode = "local"; continue; }
+    if (a === "--minimal") { minimal = true; continue; }
   }
   if (!out.length && allDetected) out.push(...detectedClients());
   if (!out.length && !interactive) out.push("claude_code");
-  return { clients: out, yes, dryRun, mode, interactive };
+  return { clients: out, yes, dryRun, mode, interactive, minimal };
 }
 
 function detectedClients() {
@@ -474,7 +475,7 @@ MCP_PROJECT_ROOT = ${JSON.stringify(reg.env.MCP_PROJECT_ROOT)}
 }
 
 async function cmdSetup() {
-  const { clients: argClients, dryRun, mode, interactive } = parseClientArgs();
+  const { clients: argClients, dryRun, mode, interactive, minimal } = parseClientArgs();
   const clients = interactive && !argClients.length ? await pickInteractively() : argClients;
   if (!clients.length) { console.log("no agents selected — nothing to do."); return; }
   const reg = serverRegistration(mode);
@@ -502,6 +503,19 @@ async function cmdSetup() {
 
   // Install workflow instructions into Claude Code skills (if present).
   await installWorkflowSkill(dryRun);
+
+  // One command sets up everything: register the agents, then install the RE
+  // programs the tools drive (Ghidra + JDK, radare2, UPX, x64dbg, Python env…).
+  // --minimal skips it; `decompile retools install` adds it later.
+  if (!dryRun && !minimal && process.env.DECOMPILE_SETUP_RETOOLS !== "0") {
+    console.log("
+installing RE tools (skip with --minimal) …");
+    const t = await import("./decompile-tools.mjs");
+    const code = await t.main(["install", "--all"]);
+    if (code) console.log("some RE tools did not install — see the summary above; retry: decompile retools install");
+  } else if (minimal) {
+    console.log("RE tools skipped (--minimal). Install later: decompile retools install");
+  }
   console.log("done. Restart your agent for the registration to take effect.");
 }
 
@@ -896,6 +910,12 @@ switch (cmd) {
   case "providers":    await cmdProviders(); break;
   case "analyze":      await cmdAnalyze(rest[0]); break;
   case "inspect":      await cmdAnalyze(rest[0], { shallow: true }); break;
+  case "retools":
+  case "re-tools": {
+    const t = await import("./decompile-tools.mjs");
+    process.exitCode = await t.main(rest);
+    break;
+  }
   // Same shape as the Rust CLI (`decompile 6.0.0`) — installers compare it
   // against the requested release tag.
   case "-V":

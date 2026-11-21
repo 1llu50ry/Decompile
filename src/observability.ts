@@ -85,9 +85,9 @@ function sanitize(name: string): string {
 export function renderPrometheus(): string {
   const out: string[] = [];
   const uptime = Math.floor((Date.now() - state.started) / 1000);
-  out.push("# HELP mcp_gamehacking_uptime_seconds server uptime");
-  out.push("# TYPE mcp_gamehacking_uptime_seconds counter");
-  out.push(`mcp_gamehacking_uptime_seconds ${uptime}`);
+  out.push("# HELP decompile_uptime_seconds server uptime");
+  out.push("# TYPE decompile_uptime_seconds counter");
+  out.push(`decompile_uptime_seconds ${uptime}`);
 
   out.push("# HELP mcp_tool_calls_total total MCP tool invocations");
   out.push("# TYPE mcp_tool_calls_total counter");

@@ -1,4 +1,4 @@
-# mcp-reverse :: Ghidra Jython plugin
+# decompile :: Ghidra Jython plugin
 # ---------------------------------------------------------------
 # Save as `<ghidra_user>/ghidra_scripts/mcp_bridge.py` and run it
 # from Ghidra's Script Manager, OR launch via `analyzeHeadless`:

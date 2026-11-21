@@ -1,4 +1,4 @@
-// mcp-reverse :: dnSpy / dnSpyEx extension
+// decompile :: dnSpy / dnSpyEx extension
 // ---------------------------------------------------------------
 // Build as a dnSpy extension (net8-windows for dnSpyEx) and drop
 // mcp_dnspy_bridge.dll into dnSpy's Extensions/ folder, under its

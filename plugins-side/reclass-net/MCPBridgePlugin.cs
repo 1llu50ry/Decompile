@@ -1,4 +1,4 @@
-// mcp-reverse :: ReClass.NET plugin
+// decompile :: ReClass.NET plugin
 // ---------------------------------------------------------------
 // Build against ReClass.NET's plugin SDK (reference ReClass.NET.exe
 // and ReClass.NET.Core.dll). Drop the resulting ReClassNET-MCP.dll

@@ -1,5 +1,5 @@
 --[[
-  mcp-reverse :: Cheat Engine plugin
+  decompile :: Cheat Engine plugin
   ---------------------------------------------------------------
   Drop this file into Cheat Engine's `autorun` directory
   (`<CE>/autorun/mcp_bridge.lua`) and the HTTP endpoint on

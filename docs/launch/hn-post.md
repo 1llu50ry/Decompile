@@ -2,7 +2,7 @@
 
 **Title (choose one):**
 
-- `Show HN: Mcp-gamehacking – an MCP server that unifies 59 RE/debug tools`
+- `Show HN: decompile – an MCP server that unifies 59 RE/debug tools`
 - `Show HN: Multi-agent reverse engineering over MCP – Claude, Codex, Cursor collaborate`
 
 **Body:**

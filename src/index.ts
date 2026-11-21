@@ -2149,15 +2149,15 @@ async function main() {
         }
         const mu = process.memoryUsage();
         const processLines = [
-          `# HELP mcp_gamehacking_rss_bytes Process RSS`,
-          `# TYPE mcp_gamehacking_rss_bytes gauge`,
-          `mcp_gamehacking_rss_bytes ${mu.rss}`,
-          `# HELP mcp_gamehacking_heap_used_bytes V8 heap used`,
-          `# TYPE mcp_gamehacking_heap_used_bytes gauge`,
-          `mcp_gamehacking_heap_used_bytes ${mu.heapUsed}`,
-          `# HELP mcp_gamehacking_active_transports Active HTTP MCP sessions`,
-          `# TYPE mcp_gamehacking_active_transports gauge`,
-          `mcp_gamehacking_active_transports ${transports.size}`,
+          `# HELP decompile_rss_bytes Process RSS`,
+          `# TYPE decompile_rss_bytes gauge`,
+          `decompile_rss_bytes ${mu.rss}`,
+          `# HELP decompile_heap_used_bytes V8 heap used`,
+          `# TYPE decompile_heap_used_bytes gauge`,
+          `decompile_heap_used_bytes ${mu.heapUsed}`,
+          `# HELP decompile_active_transports Active HTTP MCP sessions`,
+          `# TYPE decompile_active_transports gauge`,
+          `decompile_active_transports ${transports.size}`,
         ].join("\n") + "\n";
         res.writeHead(200, { "content-type": "text/plain; version=0.0.4" });
         res.end(processLines + renderPrometheus());

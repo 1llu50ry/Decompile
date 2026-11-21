@@ -10,7 +10,6 @@ import { z } from "zod";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "path";
 import { createReadStream } from "node:fs";
-import { createInterface } from "readline";
 import { registerReTools } from "./retools.js";
 import { registerNativeReTools } from "./native-re.js";
 import { registerNativeFormatsTools } from "./native-formats.js";
@@ -466,55 +465,82 @@ function notFound(kind: string, name: string) {
 // GREP ENGINE -- streaming line search through source.txt
 // ============================================================
 
-async function grepFile(filePath: string, pattern: RegExp, maxMatches: number, contextLines: number): Promise<{ line: number; text: string }[]> {
-  return new Promise(async (resolve) => {
-    const matches: { line: number; text: string }[] = [];
-    let lineNum = 0;
-    const buffer: string[] = [];
+// ============================================================
+// ARCHIVE SCAN — shared by grep_sources / find_offset / find_function
+// ============================================================
+// Ported from the drvova fork ("a full-archive scan outlasted the request
+// timeout and returned nothing"; "the same unbounded scan was in three
+// capabilities"), adapted to this repo: sources are read through safeRead, so
+// they come from skills/<name>/source.txt, a .gz beside it, or db/skills.db
+// (source_gz) — the installed bundles ship only the DB, and the old
+// filesystem-only grep searched zero archives there.
 
-    try {
-      // Resolve the live path: prefer the uncompressed source.txt when
-      // it exists; otherwise stream through gunzip from source.txt.gz
-      // transparently so the greps work in both layouts.
-      let readable: NodeJS.ReadableStream;
-      if (await fileExists(filePath) && !filePath.endsWith(".gz")) {
-        // check if uncompressed exists at the exact path
-        try {
-          await stat(filePath);
-          readable = createReadStream(filePath, { encoding: "utf-8", highWaterMark: 64 * 1024 });
-        } catch {
-          const { createGunzip } = await import("node:zlib");
-          readable = createReadStream(filePath + ".gz", { highWaterMark: 64 * 1024 }).pipe(createGunzip()).setEncoding("utf-8");
-        }
-      } else {
-        const { createGunzip } = await import("node:zlib");
-        readable = createReadStream(filePath + ".gz", { highWaterMark: 64 * 1024 }).pipe(createGunzip()).setEncoding("utf-8");
-      }
-      const rl = createInterface({
-        input: readable,
-        crlfDelay: Infinity,
-      });
+/** Whether a skill has a source dump, from the index (filesystem or DB). */
+async function sourceAvailable(name: string): Promise<boolean> {
+  return (await getIndex()).get(name)?.hasSource ?? false;
+}
 
-      rl.on("line", (line) => {
-        lineNum++;
-        buffer.push(line);
-        if (buffer.length > contextLines * 2 + 1) buffer.shift();
+/** Line-numbered matches in one text. Test-first: a text without a match is never split. */
+function grepText(text: string, pattern: RegExp, maxMatches: number): { line: number; text: string }[] {
+  const flags = pattern.flags.replace(/g/g, "");
+  if (!new RegExp(pattern.source, flags).test(text)) return [];
+  const re = new RegExp(pattern.source, flags);
+  const out: { line: number; text: string }[] = [];
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length && out.length < maxMatches; i++) {
+    if (re.test(lines[i])) out.push({ line: i + 1, text: lines[i].replace(/\r$/, "").trim().slice(0, 300) });
+  }
+  return out;
+}
 
-        if (pattern.test(line)) {
-          matches.push({ line: lineNum, text: line.trimEnd().slice(0, 200) });
-          if (matches.length >= maxMatches) {
-            rl.close();
-            rl.removeAllListeners();
-          }
-        }
-      });
+/** What a scan of the source archives found, and how much of them it covered. */
+interface ScanResult {
+  matches: Array<{ skill: string; matches: { line: number; text: string }[] }>;
+  searched: number;
+  /** Archives in scope, counted up front so coverage is honest. */
+  inScope: number;
+  /** Why the scan stopped before the end: the time budget, or enough matches found. */
+  stopped: "budget" | "enough" | null;
+  seconds: number;
+}
 
-      rl.on("close", () => resolve(matches));
-      rl.on("error", () => resolve(matches));
-    } catch {
-      resolve(matches);
+/**
+ * Scan the source archives for a pattern. Every scan is bounded by a time
+ * budget and reports its coverage, so a slow full pass returns what it found
+ * (and says so) instead of outlasting the host's request timeout with nothing.
+ */
+async function scanArchives(
+  pattern: RegExp,
+  opts: { nameFilter?: string; maxMatches: number; perFile: number; budgetMs?: number },
+): Promise<ScanResult> {
+  const idx = await getIndex();
+  const started = Date.now();
+  const budget = opts.budgetMs ?? Number(process.env.MCP_SCAN_BUDGET_MS ?? 25_000);
+  const filter = opts.nameFilter?.toLowerCase();
+  const names = [...idx.values()].filter((s) => s.hasSource && (!filter || s.name.toLowerCase().includes(filter))).map((s) => s.name);
+  const matches: ScanResult["matches"] = [];
+  let searched = 0;
+  let stopped: ScanResult["stopped"] = null;
+  for (const name of names) {
+    if (Date.now() - started > budget) { stopped = "budget"; break; }
+    const text = await safeRead(join(DIRS.skills, name, "source.txt"));
+    searched++;
+    if (!text) continue;
+    const hits = grepText(text, pattern, opts.perFile);
+    if (hits.length) {
+      matches.push({ skill: name, matches: hits });
+      if (matches.length >= opts.maxMatches) { if (searched < names.length) stopped = "enough"; break; }
     }
-  });
+  }
+  return { matches, searched, inScope: names.length, stopped, seconds: (Date.now() - started) / 1000 };
+}
+
+/** One-line coverage note for scan results. */
+function coverageNote(r: ScanResult): string {
+  const pct = r.inScope ? Math.round((100 * r.searched) / r.inScope) : 100;
+  return `searched ${r.searched} of ${r.inScope} source archives (${pct}%) in ${r.seconds.toFixed(1)}s` +
+    (r.stopped === "budget" ? " — time budget reached; narrow with `filter` or raise MCP_SCAN_BUDGET_MS for full coverage" : "") +
+    (r.stopped === "enough" ? " — stopped at the requested number of matches; raise the max to see more" : "");
 }
 
 // ============================================================
@@ -778,7 +804,7 @@ server.resource(
     const n = name as string;
     const skill = await readSkill(n);
     if (!skill) return { contents: [{ uri: uri.href, mimeType: "text/plain", text: `Skill "${n}" not found.` }] };
-    const hasSrc = await fileExists(join(DIRS.skills, n, "source.txt"));
+    const hasSrc = await sourceAvailable(n);
     return { contents: [{ uri: uri.href, mimeType: "text/markdown", text: formatSkillFull(n, skill, hasSrc) }] };
   }
 );
@@ -793,7 +819,7 @@ server.prompt(
   { project: z.string().describe("Skill/project name (kebab-case)") },
   async ({ project }) => {
     const skill = await readSkill(project);
-    const hasSrc = skill ? await fileExists(join(DIRS.skills, project, "source.txt")) : false;
+    const hasSrc = skill ? await sourceAvailable(project) : false;
     const intro = skill ? formatSkillFull(project, skill, hasSrc) : `Project "${project}" not found in library.`;
     return {
       messages: [{
@@ -890,8 +916,8 @@ server.prompt(
   async ({ project_a, project_b }) => {
     const a = await readSkill(project_a);
     const b = await readSkill(project_b);
-    const aHas = a ? await fileExists(join(DIRS.skills, project_a, "source.txt")) : false;
-    const bHas = b ? await fileExists(join(DIRS.skills, project_b, "source.txt")) : false;
+    const aHas = a ? await sourceAvailable(project_a) : false;
+    const bHas = b ? await sourceAvailable(project_b) : false;
     const aText = a ? formatSkillFull(project_a, a, aHas) : `"${project_a}" not found.`;
     const bText = b ? formatSkillFull(project_b, b, bHas) : `"${project_b}" not found.`;
     return {
@@ -963,7 +989,7 @@ server.tool(
     const skill = await readSkill(name);
     if (!skill) return notFound("Skill", name);
 
-    const hasSrc = await fileExists(join(DIRS.skills, name, "source.txt"));
+    const hasSrc = await sourceAvailable(name);
     let output = formatSkillFull(name, skill, hasSrc);
 
     if (hasSrc) {
@@ -1033,26 +1059,12 @@ server.tool(
       return err(`Invalid regex: ${e}`);
     }
 
-    const results: Array<{ skill: string; matches: { line: number; text: string }[] }> = [];
-    let filesSearched = 0;
+    const scan = await scanArchives(regex, { nameFilter: filter, maxMatches: max_files, perFile: max_matches_per_file });
+    const results = scan.matches;
 
-    for (const [name, skill] of idx) {
-      if (!skill.hasSource) continue;
-      if (filter && !name.toLowerCase().includes(filter.toLowerCase())) continue;
+    if (!results.length) return err(`No matches for "${pattern}" — ${coverageNote(scan)}.`);
 
-      const filePath = join(DIRS.skills, name, "source.txt");
-      const matches = await grepFile(filePath, regex, max_matches_per_file, 0);
-
-      if (matches.length > 0) {
-        results.push({ skill: name, matches });
-        if (results.length >= max_files) break;
-      }
-      filesSearched++;
-    }
-
-    if (!results.length) return err(`No matches for "${pattern}" in ${filesSearched} source archives.`);
-
-    let output = `# Grep: \`${pattern}\`\n\nFound in ${results.length} projects (searched ${filesSearched}):\n\n`;
+    let output = `# Grep: \`${pattern}\`\n\nFound in ${results.length} projects — ${coverageNote(scan)}:\n\n`;
     for (const { skill, matches } of results) {
       output += `## ${skill}\n`;
       for (const m of matches) {
@@ -1085,21 +1097,12 @@ server.tool(
       regex = new RegExp(query, "i");
     }
 
-    const results: Array<{ skill: string; matches: { line: number; text: string }[] }> = [];
+    const scan = await scanArchives(regex, { maxMatches: max_results, perFile: 3 });
+    const results = scan.matches;
 
-    for (const [name, skill] of idx) {
-      if (!skill.hasSource) continue;
-      const filePath = join(DIRS.skills, name, "source.txt");
-      const matches = await grepFile(filePath, regex, 3, 0);
-      if (matches.length > 0) {
-        results.push({ skill: name, matches });
-        if (results.length >= max_results) break;
-      }
-    }
+    if (!results.length) return err(`No projects reference "${query}" — ${coverageNote(scan)}.`);
 
-    if (!results.length) return err(`No projects reference "${query}".`);
-
-    let output = `# Offset Cross-Reference: \`${query}\`\n\nFound in ${results.length} projects:\n\n`;
+    let output = `# Offset Cross-Reference: \`${query}\`\n\nFound in ${results.length} projects — ${coverageNote(scan)}:\n\n`;
     for (const { skill, matches } of results) {
       output += `### ${skill}\n`;
       for (const m of matches) {
@@ -1133,7 +1136,7 @@ server.tool(
 
     const format = async (name: string, skill: ParsedFile | null) => {
       if (!skill) return `## ${name}\n\nNot found in library.\n`;
-      const hasSrc = await fileExists(join(DIRS.skills, name, "source.txt"));
+      const hasSrc = await sourceAvailable(name);
       let text = formatSkillFull(name, skill, hasSrc);
       if (include_source && hasSrc) {
         const src = await safeRead(join(DIRS.skills, name, "source.txt"));
@@ -1464,21 +1467,12 @@ server.tool(
     const escaped = function_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const regex = new RegExp(`(?:^|\\s|\\*|>)${escaped}\\s*\\(`, "i");
 
-    const results: Array<{ skill: string; matches: { line: number; text: string }[] }> = [];
+    const scan = await scanArchives(regex, { maxMatches: max_results, perFile: 3 });
+    const results = scan.matches;
 
-    for (const [name, skill] of idx) {
-      if (!skill.hasSource) continue;
-      const filePath = join(DIRS.skills, name, "source.txt");
-      const matches = await grepFile(filePath, regex, 3, 0);
-      if (matches.length > 0) {
-        results.push({ skill: name, matches });
-        if (results.length >= max_results) break;
-      }
-    }
+    if (!results.length) return err(`No definitions found for "${function_name}" — ${coverageNote(scan)}.`);
 
-    if (!results.length) return err(`No definitions found for "${function_name}".`);
-
-    let output = `# Function: ${function_name}\n\nFound in ${results.length} projects:\n\n`;
+    let output = `# Function: ${function_name}\n\nFound in ${results.length} projects — ${coverageNote(scan)}:\n\n`;
     for (const { skill, matches } of results) {
       output += `### ${skill}\n`;
       for (const m of matches) {
@@ -1810,7 +1804,7 @@ server.tool("read_skill", "Read a skill's SKILL.md content with full metadata.",
 }, async ({ name }) => {
   const skill = await readSkill(name);
   if (!skill) return notFound("Skill", name);
-  const hasSrc = await fileExists(join(DIRS.skills, name, "source.txt"));
+  const hasSrc = await sourceAvailable(name);
   return ok(formatSkillFull(name, skill, hasSrc));
 });
 

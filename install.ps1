@@ -167,19 +167,22 @@ function Assert-Version([string]$Cmd, [string]$Tag) {
   Ok "version check: $got"
 }
 
-$script:SetupCmd = $null
-$script:SetupPre = @()
+# Mutable state shared by every function. A hashtable (reference type) instead
+# of $script: variables: under `& ([scriptblock]::Create((irm ...))) -Args` the
+# script: scope is the *caller's*, so $script:SetupArgs read back empty and
+# `setup` ran without the requested arguments.
+$State = @{ SetupCmd = $null; SetupPre = @(); SetupArgs = $SetupArgs }
 
 # Start-Process -NoNewWindow hands the console straight to the child, so the
 # interactive picker (setup -i) can prompt and read input.
 function Invoke-Setup {
-  if (-not $script:SetupCmd) { return }
-  $a = @($script:SetupPre) + @('setup') + @($script:SetupArgs -split '\s+' | Where-Object { $_ })
+  if (-not $State.SetupCmd) { return }
+  $a = @($State.SetupPre) + @('setup') + @($State.SetupArgs -split '\s+' | Where-Object { $_ })
   if (-not $DoSetup) { Say "skipping setup. Later: decompile $($a -join ' ')"; return }
-  $exe = (Get-Command $script:SetupCmd -ErrorAction Stop).Source
-  Say "running: $($script:SetupCmd) $($a -join ' ')"
+  $exe = (Get-Command $State.SetupCmd -ErrorAction Stop).Source
+  Say "running: $($State.SetupCmd) $($a -join ' ')"
   $p = Start-Process -FilePath $exe -ArgumentList $a -NoNewWindow -Wait -PassThru
-  if ($p.ExitCode -ne 0) { Warn "setup exited with $($p.ExitCode) - rerun: $($script:SetupCmd) $($a -join ' ')" }
+  if ($p.ExitCode -ne 0) { Warn "setup exited with $($p.ExitCode) - rerun: $($State.SetupCmd) $($a -join ' ')" }
 }
 
 function Get-Arch {
@@ -291,7 +294,7 @@ function Install-Binary {
   [void](Test-Node $false)
   Add-UserPath
   $env:Path = "$BinDir;$env:Path"
-  $script:SetupCmd = $Exe
+  $State.SetupCmd = $Exe
   return $true
 }
 
@@ -306,7 +309,7 @@ function Install-Npm {
   if (-not (Test-Path $cmd)) { $cmd = 'decompile.cmd' }
   Ok "installed via npm: $cmd"
   Assert-Version $cmd $Version
-  $script:SetupCmd = $cmd
+  $State.SetupCmd = $cmd
 }
 
 function Install-Npx {
@@ -314,10 +317,10 @@ function Install-Npx {
   if (-not (Get-Command npx.cmd -ErrorAction SilentlyContinue)) { Die 'npx not found (it ships with npm / Node.js)' }
   $spec = Get-NpmSpec
   $env:DECOMPILE_NPX_SPEC = $spec   # `decompile setup --npx` writes `npx -y <spec> serve`
-  if ($SetupArgs -notmatch '(^|\s)--npx(\s|$)') { $script:SetupArgs = "$SetupArgs --npx" }
+  if ($State.SetupArgs -notmatch '(^|\s)--npx(\s|$)') { $State.SetupArgs = "$($State.SetupArgs) --npx" }
   Say "npx mode: nothing is installed; agents will launch ``npx -y $spec serve``"
-  $script:SetupCmd = 'npx.cmd'
-  $script:SetupPre = @('-y', $spec)
+  $State.SetupCmd = 'npx.cmd'
+  $State.SetupPre = @('-y', $spec)
 }
 
 function Uninstall-All {

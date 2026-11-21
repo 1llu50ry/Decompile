@@ -635,25 +635,24 @@ async function cmdDoctor() {
   try { await stat(entry); add("dist/index.js built", true, entry); }
   catch { add("dist/index.js built", false, "run `npm run build`"); }
 
-  // Registrations.
+  // Registrations. Agents that aren't installed are not failures — they are
+  // reported separately so the health summary only counts what matters.
+  const registered = [], detected = [];
+  let absent = 0;
   for (const client of SUPPORTED_CLIENTS) {
     const p = clientConfigPath(client);
     if (!p) continue;
-    try {
-      // Read atomically — if the file is absent the readFile throws
-      // ENOENT, which is cheaper and safer than a prior stat().
-      if (p.endsWith(".toml")) {
-        const t = await readFile(p, "utf8");
-        add(`${client} registered`, t.includes(`[mcp.servers.${SERVER_KEY}]`), p);
-      } else {
-        const t = await readFile(p, "utf8");
-        let cfg = {};
-        try { cfg = JSON.parse(t); } catch { /* keep {} */ }
-        add(`${client} registered`, Boolean(cfg.mcpServers?.[SERVER_KEY]), p);
-      }
-    } catch {
-      add(`${client} registered`, false, "(config not found)");
+    let t;
+    // Read atomically — ENOENT means the agent isn't installed.
+    try { t = await readFile(p, "utf8"); } catch { absent++; continue; }
+    let ok;
+    if (p.endsWith(".toml")) ok = t.includes(`[mcp.servers.${SERVER_KEY}]`);
+    else {
+      let cfg = {};
+      try { cfg = JSON.parse(t); } catch { /* keep {} */ }
+      ok = Boolean(cfg.mcpServers?.[SERVER_KEY]);
     }
+    (ok ? registered : detected).push([client, p]);
   }
 
   // DB skill count breakdown.
@@ -665,11 +664,15 @@ async function cmdDoctor() {
     db.h.close();
   }
 
-  for (const c of checks) {
-    console.log(`  ${c.ok ? "+" : "-"} ${c.name}: ${c.note}`);
-  }
+  console.log("## runtime");
+  for (const c of checks) console.log(`  ${c.ok ? "+" : "-"} ${c.name}: ${c.note}`);
+  console.log("\n## agents");
+  for (const [c, p] of registered) console.log(`  + ${c} registered: ${p}`);
+  for (const [c, p] of detected) console.log(`  ~ ${c} installed, not registered: ${p}  (decompile setup --client ${c})`);
+  console.log(`  · ${absent} other supported agents not installed on this machine`);
   const failed = checks.filter(c => !c.ok).length;
-  console.log(`\n${checks.length - failed}/${checks.length} checks passed.`);
+  console.log(`\n${checks.length - failed}/${checks.length} runtime checks passed · ${registered.length} agent(s) registered, ${detected.length} detected but not registered.`);
+  if (!registered.length) console.log("No agent has decompile registered yet — run: decompile setup -i");
   if (failed) process.exit(1);
 }
 

@@ -60,32 +60,31 @@ pub fn run(root: &Path) -> Result<()> {
         },
     ));
 
-    // Registrations.
+    // Registrations. Agents that aren't installed are not failures — they are
+    // reported separately so the health summary only counts what matters.
+    let mut registered: Vec<(String, String)> = Vec::new();
+    let mut detected: Vec<(String, String)> = Vec::new();
+    let mut absent = 0usize;
     for client in SUPPORTED {
-        let p = client_config_path(client);
-        if let Some(p) = p {
-            if !p.exists() {
-                checks.push((
-                    format!("{} registered", client),
-                    false,
-                    "(config not found)".into(),
-                ));
-                continue;
-            }
-            let ok = if p.extension().and_then(|s| s.to_str()) == Some("toml") {
-                fs::read_to_string(&p)
-                    .map(|t| t.contains(&format!("[mcp.servers.{}]", SERVER_KEY)))
-                    .unwrap_or(false)
-            } else {
-                fs::read_to_string(&p)
-                    .ok()
-                    .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
-                    .and_then(|v| v.get("mcpServers").cloned())
-                    .and_then(|m| m.get(SERVER_KEY).cloned())
-                    .is_some()
-            };
-            checks.push((format!("{} registered", client), ok, p.display().to_string()));
+        let Some(p) = client_config_path(client) else { continue };
+        if !p.exists() {
+            absent += 1;
+            continue;
         }
+        let ok = if p.extension().and_then(|s| s.to_str()) == Some("toml") {
+            fs::read_to_string(&p)
+                .map(|t| t.contains(&format!("[mcp.servers.{}]", SERVER_KEY)))
+                .unwrap_or(false)
+        } else {
+            fs::read_to_string(&p)
+                .ok()
+                .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+                .and_then(|v| v.get("mcpServers").cloned())
+                .and_then(|m| m.get(SERVER_KEY).cloned())
+                .is_some()
+        };
+        let entry = (client.to_string(), p.display().to_string());
+        if ok { registered.push(entry) } else { detected.push(entry) }
     }
 
     // DB counts via tiny Node one-liner. The Rust build doesn't link
@@ -110,15 +109,31 @@ pub fn run(root: &Path) -> Result<()> {
         }
     }
 
+    println!("## runtime");
     for (name, ok, note) in &checks {
         println!("  {} {}: {}", if *ok { "+" } else { "-" }, name, note);
     }
+
+    println!("\n## agents");
+    for (c, p) in &registered {
+        println!("  + {} registered: {}", c, p);
+    }
+    for (c, p) in &detected {
+        println!("  ~ {} installed, not registered: {}  (decompile setup --client {})", c, p, c);
+    }
+    println!("  · {} other supported agents not installed on this machine", absent);
+
     let failed = checks.iter().filter(|c| !c.1).count();
     println!(
-        "\n{}/{} checks passed.",
+        "\n{}/{} runtime checks passed · {} agent(s) registered, {} detected but not registered.",
         checks.len() - failed,
-        checks.len()
+        checks.len(),
+        registered.len(),
+        detected.len()
     );
+    if registered.is_empty() {
+        println!("No agent has decompile registered yet — run: decompile setup -i");
+    }
     if failed > 0 {
         std::process::exit(1);
     }

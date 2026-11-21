@@ -162,17 +162,23 @@ jobs:
             ext: ''
             pack: tar
             cross: true
+          # Built with the runner's preinstalled Android NDK: cross-rs 0.2.x
+          # ships an NDK too old for current Rust (`cannot find -lunwind`).
           - target: aarch64-linux-android
             os: ubuntu-latest
             ext: ''
             pack: tar
             cross: true
+            ndk: true
+          # macos-latest is Apple Silicon; the Intel build is cross-compiled
+          # there by Apple clang (no Rosetta assumed, so no smoke test).
           - target: x86_64-apple-darwin
-            os: macos-14
+            os: macos-latest
             ext: ''
             pack: tar
+            cross: true
           - target: aarch64-apple-darwin
-            os: macos-14
+            os: macos-latest
             ext: ''
             pack: tar
           - target: x86_64-pc-windows-msvc
@@ -212,7 +218,7 @@ jobs:
       # aarch64-pc-windows-msvc is built by MSVC on the x64 runner — `cross`
       # is a Linux/Docker tool, so only use it for Linux cross targets.
       - name: install cross (Linux cross-targets)
-        if: matrix.cross && runner.os == 'Linux'
+        if: matrix.cross && runner.os == 'Linux' && !matrix.ndk
         run: cargo install cross --locked
 
       - name: build (native toolchain)
@@ -222,10 +228,26 @@ jobs:
         shell: bash
 
       - name: build (cross)
-        if: matrix.cross && runner.os == 'Linux'
+        if: matrix.cross && runner.os == 'Linux' && !matrix.ndk
         run: cross build --release --target ${{ matrix.target }}
         working-directory: core
         shell: bash
+
+      - name: build (Android NDK)
+        if: matrix.ndk
+        working-directory: core
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          [ -d "$NDK" ] || { echo "::error::Android NDK not found on runner"; exit 1; }
+          BIN="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          # API 24 = Android 7.0, Termux's minimum.
+          export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$BIN/aarch64-linux-android24-clang"
+          export CC_aarch64_linux_android="$BIN/aarch64-linux-android24-clang"
+          export AR_aarch64_linux_android="$BIN/llvm-ar"
+          cargo build --release --target ${{ matrix.target }}
+          file target/${{ matrix.target }}/release/decompile
 
       - uses: actions/download-artifact@v4
         with:
@@ -280,8 +302,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # Publish even if an exotic target failed (its users get the npm fallback),
+  # but never without the payload or any of the primary platforms.
   publish:
-    needs: build
+    needs: [app, build]
+    if: ${{ !cancelled() && needs.app.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -309,6 +334,12 @@ jobs:
           set -euo pipefail
           mkdir -p flat
           find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.tgz' -o -name '*.sha256' \) -exec cp {} flat/ \;
+
+          test -f flat/decompile.tgz || { echo "::error::npx package missing"; exit 1; }
+          for t in x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-unknown-linux-musl                    x86_64-apple-darwin aarch64-apple-darwin; do
+            test -f "flat/decompile-$t.tar.gz" || { echo "::error::primary target missing: $t"; exit 1; }
+          done
+          test -f flat/decompile-x86_64-pc-windows-msvc.zip || { echo "::error::primary target missing: windows x64"; exit 1; }
 
           # Installers attached to a release install *that* release by default.
           sed 's|^VERSION="${VERSION:-latest}" # @release-pin$|VERSION="${VERSION:-'"$TAG"'}" # @release-pin|' install.sh > flat/install.sh

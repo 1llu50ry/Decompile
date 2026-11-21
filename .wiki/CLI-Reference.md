@@ -2,7 +2,7 @@
 
 All subcommands of the `decompile` binary. The Node shim
 (`bin/decompile.mjs`) dispatches to the Rust binary when it is on disk
-and falls back to the full Node CLI (`bin/mcp-reverse.mjs`) otherwise.
+and falls back to the full Node CLI (`bin/decompile-node.mjs`) otherwise.
 Behavior is identical.
 
 ## Global options
@@ -103,9 +103,9 @@ Run every runtime + registration audit.
 
 ```
 + node >= 22: node v26.13.1
-+ skills.db present: D:\mcp-reverse\db\skills.db
-+ dist/index.js built: D:\mcp-reverse\dist\index.js
-+ claude_code registered: C:\Users\you\.claude.json
++ skills.db present: ~/decompile/db/skills.db
++ dist/index.js built: ~/decompile/dist/index.js
++ claude_code registered: ~/.claude.json
 - codex registered: (config not found)
 ...
 + skills count: 6087

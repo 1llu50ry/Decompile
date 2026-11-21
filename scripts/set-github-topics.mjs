@@ -3,7 +3,7 @@
 // Requires: GITHUB_TOKEN with `public_repo` (or `repo`) scope.
 
 const OWNER = '1llu50ry';
-const REPO = 'mcp-reverse';
+const REPO = 'Decompile';
 
 // Picked to maximize search-engine coverage without exceeding the 20 cap.
 // Order matters — GitHub shows the first few most prominently.

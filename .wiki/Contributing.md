@@ -20,7 +20,7 @@ core/                    # Rust CLI (release binary = decompile / decompile.exe)
 
 bin/
   decompile.mjs          # Node shim: Rust-first, Node fallback
-  mcp-reverse.mjs        # Full Node CLI (parity with Rust)
+  decompile-node.mjs        # Full Node CLI (parity with Rust)
 
 src/
   index.ts               # MCP server entry — registers every tool
@@ -51,7 +51,7 @@ docs/
 ## Dev loop
 
 ```bash
-git clone https://github.com/1llu50ry/mcp-reverse && cd mcp-reverse
+git clone https://github.com/1llu50ry/Decompile && cd Decompile
 npm install
 npm run build
 npm test                 # 91/91
@@ -95,7 +95,7 @@ cd core && cargo watch -x 'build' -x 'run -- doctor'
 ## Adding a new agent integration
 
 1. Append the slug to `SUPPORTED` in both `core/src/setup.rs` and
-   `bin/mcp-reverse.mjs`.
+   `bin/decompile-node.mjs`.
 2. Add the config path to `client_config_path`.
 3. Add any aliases to `ALIASES` / `CLIENT_ALIASES`.
 4. Rebuild (`cargo build --release` + `npm run build`).

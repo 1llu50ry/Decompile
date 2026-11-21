@@ -33,6 +33,6 @@ if (rust) {
 }
 
 // Fallback: full Node CLI (lives next to this shim).
-const legacy = join(__dirname, "mcp-reverse.mjs");
+const legacy = join(__dirname, "decompile-node.mjs");
 const r = spawnSync(process.execPath, [legacy, ...args], { stdio: "inherit" });
 process.exit(r.status ?? 1);

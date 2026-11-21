@@ -105,7 +105,7 @@ jobs:
         run: |
           mkdir -p stage/decompile
           cp core/target/${{ matrix.target }}/release/decompile${{ matrix.ext }} stage/decompile/
-          cp bin/decompile.mjs bin/mcp-reverse.mjs stage/decompile/
+          cp bin/decompile.mjs bin/decompile-node.mjs stage/decompile/
           cp README.md LICENSE AGENTS.md stage/decompile/
           cp -r docs stage/decompile/
           mkdir -p stage/decompile/.claude-plugin

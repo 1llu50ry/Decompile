@@ -7,7 +7,7 @@ Every supported install path. Pick one.
 ### Linux / macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh
 ```
 
 Auto-detects OS + arch + libc (musl on Alpine, gnu elsewhere), downloads
@@ -25,7 +25,7 @@ CHANNEL=prerelease curl -fsSL ...install.sh | sh         # pre-release channel
 ### Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
 ```
 
 Writes `decompile.exe` to `$env:USERPROFILE\.decompile\bin\` and adds
@@ -55,7 +55,7 @@ npx -y decompile@latest setup --npx -i
 Requires Node.js 22+ and Rust 1.75+.
 
 ```bash
-git clone https://github.com/1llu50ry/mcp-reverse && cd mcp-reverse
+git clone https://github.com/1llu50ry/Decompile && cd Decompile
 npm install
 npm run build                          # TypeScript → dist/
 (cd core && cargo build --release)     # Rust CLI

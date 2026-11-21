@@ -45,10 +45,10 @@ npm install -g decompile && decompile --help          # поставить ко�
 
 ```bash
 # Linux / macOS (автодетект arch + libc)
-curl -fsSL https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh
 
 # Windows (PowerShell 5+)
-irm https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
 ```
 
 ---

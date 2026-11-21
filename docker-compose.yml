@@ -4,7 +4,7 @@
 #
 #   docker compose up -d
 #   docker compose logs -f
-#   docker compose exec decompile node bin/mcp-reverse.mjs stats   # legacy entry
+#   docker compose exec decompile node bin/decompile-node.mjs stats   # legacy entry
 #   docker compose exec decompile node bin/decompile.mjs stats      # primary
 
 services:

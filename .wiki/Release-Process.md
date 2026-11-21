@@ -50,7 +50,7 @@ AGENTS.md + docs/ + the four plugin manifests.
 After all 7 matrix jobs pass, the `publish` job downloads every
 artifact, flattens them into one dir, and runs
 `softprops/action-gh-release@v3` with `generate_release_notes: true`.
-Release appears at `https://github.com/1llu50ry/mcp-reverse/releases/tag/vX.Y.Z`.
+Release appears at `https://github.com/1llu50ry/Decompile/releases/tag/vX.Y.Z`.
 
 ## 5. Post-release
 

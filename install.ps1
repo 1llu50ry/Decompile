@@ -1,7 +1,7 @@
 # decompile — one-line installer for Windows (PowerShell 5+).
 #
 # Usage:
-#   irm https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
 #   $env:PREFIX = "C:\tools\decompile"; irm ... | iex   # custom prefix
 #   $env:SKIP_SETUP = "1"; irm ... | iex                # install only
 #   $env:CHANNEL = "prerelease"; irm ... | iex          # pick pre-release
@@ -9,7 +9,7 @@
 $ErrorActionPreference = 'Stop'
 
 $Owner    = '1llu50ry'
-$Repo     = 'mcp-reverse'
+$Repo     = 'Decompile'
 $Prefix   = if ($env:PREFIX)      { $env:PREFIX }      else { Join-Path $env:USERPROFILE '.decompile' }
 $BinDir   = Join-Path $Prefix 'bin'
 $Channel  = if ($env:CHANNEL)     { $env:CHANNEL }     else { 'latest' }

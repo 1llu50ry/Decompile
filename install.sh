@@ -6,7 +6,7 @@
 # `decompile setup` to register the MCP server with your agent of choice.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh
 #   PREFIX=/usr/local curl -fsSL ... | sudo sh                # system-wide
 #   SKIP_SETUP=1 ... | sh                                     # install only
 #   CHANNEL=prerelease ... | sh                               # pick pre-release build
@@ -15,7 +15,7 @@
 set -eu
 
 OWNER='1llu50ry'
-REPO='mcp-reverse'
+REPO='Decompile'
 PREFIX="${PREFIX:-$HOME/.local}"
 BIN_DIR="$PREFIX/bin"
 CHANNEL="${CHANNEL:-latest}"

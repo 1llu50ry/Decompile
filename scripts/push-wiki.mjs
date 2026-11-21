@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const OWNER = '1llu50ry';
-const REPO = 'mcp-reverse';
+const REPO = 'Decompile';
 const SRC_DIR = '.wiki';
 
 function tokenFromEnv() {

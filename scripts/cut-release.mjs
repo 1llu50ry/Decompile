@@ -40,5 +40,5 @@ if (!push) {
   console.log('\n(dry run) re-run with --push to actually tag and push.');
 } else {
   console.log(`\npushed ${tag}. Watch release-core workflow at:`);
-  console.log('  https://github.com/1llu50ry/mcp-reverse/actions/workflows/release-core.yml');
+  console.log('  https://github.com/1llu50ry/Decompile/actions/workflows/release-core.yml');
 }

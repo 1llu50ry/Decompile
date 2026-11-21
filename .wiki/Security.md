@@ -82,5 +82,5 @@ Identity resolution: `X-User-Id` header → Authorization bearer hash
 
 ## Reporting a vulnerability
 
-Read [SECURITY.md](https://github.com/1llu50ry/mcp-reverse/blob/main/SECURITY.md)
+Read [SECURITY.md](https://github.com/1llu50ry/Decompile/blob/main/SECURITY.md)
 for the responsible-disclosure contact.

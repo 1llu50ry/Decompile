@@ -44,10 +44,10 @@ npm install -g decompile && decompile --help          # 永久安装命令
 
 ```bash
 # Linux / macOS (自动检测 arch + libc)
-curl -fsSL https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.sh | sh
 
 # Windows (PowerShell 5+)
-irm https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/1llu50ry/Decompile/main/install.ps1 | iex
 ```
 
 ---

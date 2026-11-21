@@ -90,11 +90,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/1llu50ry/mcp-reverse.git"
+    "url": "https://github.com/1llu50ry/Decompile.git"
   },
-  "homepage": "https://github.com/1llu50ry/mcp-reverse#readme",
+  "homepage": "https://github.com/1llu50ry/Decompile#readme",
   "bugs": {
-    "url": "https://github.com/1llu50ry/mcp-reverse/issues"
+    "url": "https://github.com/1llu50ry/Decompile/issues"
   },
   "engines": {
     "node": ">=24.0.0"

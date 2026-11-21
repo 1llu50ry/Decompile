@@ -3,7 +3,7 @@
 // Requires: GITHUB_TOKEN with `contents:write` scope.
 
 const OWNER = '1llu50ry';
-const REPO = 'mcp-reverse';
+const REPO = 'Decompile';
 const KEEP_FROM = 6;
 
 const TOKEN = process.env.GITHUB_TOKEN;

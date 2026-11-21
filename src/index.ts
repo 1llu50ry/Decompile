@@ -269,7 +269,9 @@ async function safeRead(path: string): Promise<string | null> {
         if (h) {
           if (m[2] === "SKILL.md") {
             const row = dbMod.getSkill(h, m[1]);
-            if (row) return `---\nname: ${row.name}\ndescription: "${(row.description ?? "").replace(/"/g, '\\"')}"\nmetadata:\n  type: ${row.type ?? "reference"}\n---\n\n${row.body}`;
+            // JSON.stringify quotes + escapes backslashes correctly; the
+            // bare /"/g replace missed backslashes and could break YAML.
+            if (row) return `---\nname: ${row.name}\ndescription: ${JSON.stringify(row.description ?? "")}\nmetadata:\n  type: ${row.type ?? "reference"}\n---\n\n${row.body}`;
           } else {
             const text = dbMod.getSkillSource(h, m[1]);
             if (text) return text;

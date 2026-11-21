@@ -90,7 +90,10 @@ async function cmdLookup(name) {
     db.h.close();
     if (row) {
       const topics = row.topics_json ? JSON.parse(row.topics_json) : [];
-      process.stdout.write(`---\nname: ${row.name}\ndescription: "${(row.description ?? "").replace(/"/g, '\\"')}"\ntype: ${row.type ?? "reference"}\ntopics: [${topics.map(t => `"${t}"`).join(", ")}]\n---\n\n${row.body}`);
+      // Use JSON.stringify for values that may contain backslashes or
+      // quotes — a bare `.replace(/"/g, '\\"')` misses backslash escapes
+      // and can break YAML frontmatter parsers.
+      process.stdout.write(`---\nname: ${row.name}\ndescription: ${JSON.stringify(row.description ?? "")}\ntype: ${row.type ?? "reference"}\ntopics: [${topics.map((t) => JSON.stringify(t)).join(", ")}]\n---\n\n${row.body}`);
       return;
     }
   }
@@ -497,12 +500,15 @@ async function cmdSetup() {
 
 async function installWorkflowSkill(dryRun) {
   const src = join(ROOT, "docs", "workflow-instructions.md");
-  try { await stat(src); } catch { return; }
+  // Read atomically — if the file doesn't exist, we skip the install.
+  // Checking existence first and then reading introduces a TOCTOU window.
+  let body;
+  try { body = await readFile(src, "utf8"); }
+  catch (e) { if (e.code === "ENOENT") return; throw e; }
   const dst = join(home(), ".claude", "skills", SERVER_KEY, "SKILL.md");
   if (dryRun) { console.log(`[dry-run] would copy workflow-instructions.md -> ${dst}`); return; }
   await ensureParent(dst);
   const { writeFile } = await import("node:fs/promises");
-  const body = await readFile(src, "utf8");
   const frontmatter = [
     "---",
     `name: ${SERVER_KEY}`,
@@ -521,23 +527,29 @@ async function cmdUninstall() {
   for (const client of clients) {
     const p = clientConfigPath(client);
     if (!p) continue;
-    try { await stat(p); } catch { continue; }
     if (client === "codex") {
-      let text = await readFile(p, "utf8");
+      // Read once, atomically — avoids a TOCTOU between existence check
+      // and read, and also removes a second redundant read for backup.
+      let original;
+      try { original = await readFile(p, "utf8"); }
+      catch (e) { if (e.code === "ENOENT") continue; throw e; }
       const re = new RegExp(`\\n\\[mcp\\.servers\\.${SERVER_KEY}\\][\\s\\S]*?(?=\\n\\[|$)`);
-      if (re.test(text)) {
-        text = text.replace(re, "");
+      if (re.test(original)) {
+        const text = original.replace(re, "");
         if (dryRun) console.log(`[dry-run] would rewrite ${p}`);
         else {
           const { writeFile } = await import("node:fs/promises");
-          await writeFile(`${p}.bak-${Date.now()}`, await readFile(p, "utf8"), "utf8");
+          await writeFile(`${p}.bak-${Date.now()}`, original, "utf8");
           await writeFile(p, text, "utf8");
           console.log(`  - ${client} -> ${p}`);
         }
       }
       continue;
     }
-    const cfg = await readJsonSafe(p);
+    // Atomically read + parse; ENOENT = nothing to uninstall here.
+    let cfg;
+    try { cfg = JSON.parse(await readFile(p, "utf8")); }
+    catch (e) { if (e.code === "ENOENT") continue; cfg = {}; }
     if (cfg.mcpServers && cfg.mcpServers[SERVER_KEY]) {
       delete cfg.mcpServers[SERVER_KEY];
       await writeJson(p, cfg, dryRun);

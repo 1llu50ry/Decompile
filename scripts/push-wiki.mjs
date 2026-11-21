@@ -44,6 +44,14 @@ function run(argv, opts = {}) {
   return r;
 }
 
+/** Variant that returns the exit code instead of killing the process. */
+function tryRun(argv, opts = {}) {
+  console.log('$ ' + argv.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')
+    .replace(/x-access-token:[^@]+@/, 'x-access-token:***@'));
+  const r = spawnSync(argv[0], argv.slice(1), { stdio: 'inherit', ...opts });
+  return r.status ?? 1;
+}
+
 const workdir = join(tmpdir(), `decompile-wiki-${Date.now()}`);
 mkdirSync(workdir, { recursive: true });
 
@@ -51,13 +59,11 @@ const remoteUrl = `https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.w
 
 // Clone the wiki repo. May fail if the wiki was never initialized —
 // in that case, init it fresh and push to create it.
-let clonedOk = false;
-try {
-  run(['git', 'clone', '--depth', '1', remoteUrl, workdir]);
-  clonedOk = true;
-} catch { /* will init fresh */ }
-
-if (!clonedOk) {
+const cloneRc = tryRun(['git', 'clone', '--depth', '1', remoteUrl, workdir]);
+if (cloneRc !== 0) {
+  console.log('(wiki not initialized yet — creating fresh master)');
+  // tmp dir may still have the half-init'd .git; nuke and re-init.
+  for (const e of readdirSync(workdir)) rmSync(join(workdir, e), { recursive: true, force: true });
   run(['git', 'init', '-b', 'master', workdir]);
   run(['git', '-C', workdir, 'remote', 'add', 'origin', remoteUrl]);
 }

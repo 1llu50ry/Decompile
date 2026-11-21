@@ -1,0 +1,1 @@
+[decompile v6.0.0](https://github.com/1llu50ry/mcp-reverse) · MIT · [npm](https://www.npmjs.com/package/decompile) · [install.sh](https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh) · [install.ps1](https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1)

@@ -2,60 +2,155 @@
 
 # 🎮 decompile
 
-### MCP-сервер, превращающий Claude, Codex и Cursor в команду reverse-engineering.
+### Один MCP-сервер для реверс-инжиниринга любых бинарей, приложений и рантайма.
 
-**180+ MCP-инструментов · 56 RE/debug бэкендов · 9 host-плагинов · 4,200+ скиллов · multi-agent mesh · x86-64 + ARM64 эмуляторы**
+**230+ MCP-инструментов · 60+ RE/debug-бэкендов · 9 host-side плагинов · 6 000+ скиллов · 190+ агентов · 160+ субагентов · 190+ плагинов · 3 000+ промптов · мульти-агентный mesh · нативные x86-64 + ARM64 эмуляторы**
 
-[![version](https://img.shields.io/badge/version-5.0.1-blue)](CHANGELOG.md) [![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/) [![tools](https://img.shields.io/badge/MCP%20tools-180%2B-blue)](src/) [![skills](https://img.shields.io/badge/skills-4%2C200%2B-orange)](db/) [![docker](https://img.shields.io/badge/docker-multi--arch-informational)](Dockerfile) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![version](https://img.shields.io/badge/version-6.0.0-blue)](CHANGELOG.md)
+[![tests](https://img.shields.io/badge/tests-91%2F91-success)](tests/)
+[![tools](https://img.shields.io/badge/MCP%20tools-230%2B-blue)](src/)
+[![backends](https://img.shields.io/badge/RE%20backends-60%2B-blueviolet)](src/retools.ts)
+[![skills](https://img.shields.io/badge/skills-6%2C000%2B-orange)](db/skills.db)
+[![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-> **v5.0.0 выпущен.** Вес репо: 19 GiB → 18 MiB (всё в SQLite + FTS5). Четыре волны фич: build-системы для host-плагинов, Frida bridge + динамический анализ, ARM64 эмулятор + кеш декомпиляции + chunking, bindiff / ROP / метадата игровых движков / MCP sampling / SVG visualization. [CHANGELOG](CHANGELOG.md).
-
-[Быстрый старт](#быстрый-старт) · [Архитектура](docs/architecture.md) · [Agent Mesh](docs/agent-mesh.md) · [MCP Hub](docs/mcp-hub.md) · [Этика](#этика)
+[English](README.md) · **Русский** · [简体中文](README-zh.md)
 
 </div>
 
 ---
 
-## Для кого
-
-- **Инженеры античитов** — понять как работают bypass, укрепить систему.
-- **Security researchers** — разбирать бинарники, которыми вы владеете или на которые есть разрешение.
-- **Студенты RE** — учиться на 4,200+ готовых разборах (BattlEye, EAC, Vanguard, VAC, FACEIT, Byfron, Ricochet, UE4/UE5, Source 2, IL2CPP).
-- **Game preservation** — документировать игровые экосистемы.
-
-## Что умеет
-
-- **111 нативных MCP-инструментов** — zero-dep парсеры PE/ELF/Mach-O/DEX/WASM/Minidump/ZIP/APK/.NET/Unity AssetBundle/UE .pak/IL2CPP, AoB-сканер, Shannon entropy, идентификация крипто-констант, PDB70 → ссылка на symbol server Microsoft.
-- **59 RE/debug бэкендов** в едином хабе — `smart_decompile` пробует IDA → Ghidra → Binja → RetDec.
-- **Multi-agent mesh** — Claude, Codex, Cursor регистрируются как агенты, общаются DM/каналами, передают задачи, голосуют за результаты друг друга, делятся KV-базой знаний.
-
-## Быстрый старт
+## Установка в агента одной строкой
 
 ```bash
-git clone https://github.com/1llu50ry/decompile
-cd decompile
-npm install && npx tsc
-npm test # 20/20 должны пройти
-
-./bin/decompile.mjs stats
-./bin/decompile.mjs search battleye
-./bin/decompile.mjs tools
+npx -y decompile@latest setup
 ```
 
-Для Claude Code / Codex / Cursor добавь в MCP-конфиг:
-```json
-{ "decompile": { "command": "node", "args": ["/path/to/dist/index.js"] } }
-```
+Зарегистрирует MCP-сервер в Claude Code (по умолчанию), установит
+workflow-инструкции как skill и выведет что именно сделал. Перезапусти
+агент — готово.
 
-Или через Docker:
+### Варианты
+
 ```bash
-docker compose up
-# → HTTP MCP на http://localhost:7777/mcp
-# → /healthz + /metrics
+npx -y decompile@latest setup -i                      # интерактивный выбор (42 агента)
+npx -y decompile@latest setup --all-detected          # все обнаруженные
+npx -y decompile@latest setup --client claude_code    # конкретный
+npx -y decompile@latest setup --client codex --client cursor --client dsh
+npx -y decompile@latest setup --dry-run               # превью без записи
+npx -y decompile@latest setup --npx                   # cache-safe регистрация (npx каждый раз)
+npm install -g decompile && decompile --help          # поставить команду навсегда
 ```
 
-## Этика
+### Нативные установщики
 
-Проект создан для **security-ресёрча, детекции читов, оборонительной инженерии и образования**. Не содержит читов и не управляет игровым процессом. Используй против бинарников, которыми ты владеешь или на которые есть явное разрешение. См. [SECURITY.md](SECURITY.md) и [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+```bash
+# Linux / macOS (автодетект arch + libc)
+curl -fsSL https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.sh | sh
 
-Полная документация по-английски: [README.md](README.md). Переводы приветствуются.
+# Windows (PowerShell 5+)
+irm https://raw.githubusercontent.com/1llu50ry/mcp-reverse/main/install.ps1 | iex
+```
+
+---
+
+## Для чего это
+
+Реверс современного приложения — это пять статических тулов (Ghidra, IDA,
+Binary Ninja, radare2, Hopper), три дебаггера (x64dbg, WinDbg, GDB/LLDB),
+хекс-редактор, сканер памяти, фреймворк для инструментации, и целая
+россыпь парсеров форматов (PE, ELF, Mach-O, DEX, Minidump, WASM, .NET,
+ASAR, GGUF, BEAM, Go). Переключаться между ними — это часы. Научить
+модель водить хотя бы один из них — ещё больше часов.
+
+**Этот сервер:**
+
+1. **Агрегирует 60+ RE/debug MCP-бэкендов** за одним подключением —
+   `smart_decompile` выбирает IDA когда та запущена, падает в Ghidra,
+   затем Binary Ninja, затем radare2.
+2. **Поставляет 230+ нативных MCP-инструментов** — большинству ответов
+   внешний бэкенд не нужен вовсе: PE / ELF / Mach-O / DEX / WASM /
+   Minidump / ZIP / .NET / IL2CPP / ASAR / GGUF / BEAM / Go buildinfo
+   парсеры, AoB-сканер сигнатур, энтропия Шеннона, идентификация
+   криптоконстант, PDB70 → Microsoft symbol server URL, PyInstaller TOC,
+   HAR summary, SQLite inspect, ELF notes, Apple IPS.
+3. **Позволяет агентам сотрудничать** через общий mesh — DM, каналы,
+   передача задач, adversarial voting, разделяемый KV knowledge-base,
+   named locks для координации. Персистенс в JSON, без зависимостей.
+4. **Курирует 6 000+ скиллов, 190+ агентов, 160+ субагентов, 190+
+   плагинов, 3 000+ промптов** — hand-written глубокие референсы плюс
+   импортированные open-source техники, полнотекстовый поиск.
+5. **Поставляет one-shot CLI** (`decompile setup`, `decompile analyze
+   <path>`, `decompile capabilities`, `decompile doctor`) — регистрирует
+   MCP в 42 агентах и возвращает structured findings с evidence и
+   unknowns.
+
+Если ты на security-research, binary-analysis, defensive-engineering или
+SDK-работе — это сворачивает день перекладывания тулзов в одно
+MCP-подключение.
+
+---
+
+## Поддерживаемые агенты (42)
+
+Канонические slug'и (как значения `--client`):
+
+| Группа | Slug'и |
+|---|---|
+| Anthropic | `claude_code`, `claude_desktop` |
+| OpenAI family | `codex`, `copilot_cli` |
+| Редакторы / IDE | `cursor`, `windsurf`, `vscode`, `zed`, `trae`, `kiro`, `qoder` |
+| CLI-агенты | `gemini_cli`, `grok_build`, `qwen_code`, `kimi`, `dsh`, `omp`, `pi`, `hermes`, `droid`, `goose`, `kilo`, `junie`, `fx`, `commandcode`, `zcode`, `freebuff`, `workbuddy`, `mastracode`, `mcporter`, `amp` |
+| Cline-интеграции | `cline`, `cline_vscode`, `cline_vscode_insiders`, `cline_vscodium`, `cline_cursor`, `cline_windsurf` |
+| Другие | `codebuddy`, `devin`, `opencode`, `antigravity`, `lm_studio` |
+
+Алиасы: `claude-code`, `claude-desktop`, `gemini`, `grok`, `qwen`,
+`lm-studio`, `deepseek`, `copilot`.
+
+---
+
+## CLI
+
+```bash
+decompile setup -i                 # интерактивный выбор агента
+decompile analyze path/to/binary   # auto-detect + findings JSON
+decompile inspect  path/to/binary  # shallow analyze
+decompile capabilities             # все tools + каталог
+decompile doctor                   # runtime + БД + регистрации
+decompile providers                # RE-бэкенды
+decompile guidance                 # распечатать workflow-инструкции
+decompile serve                    # запустить MCP (используется регистрацией)
+decompile uninstall --client ...   # убрать регистрацию
+```
+
+---
+
+## Для агента
+
+```text
+Разбери как работает поиск в приложении X, покажи evidence, и построй
+похожую фичу в моём проекте.
+```
+
+Сервер вернёт structured findings — каждый claim подкреплён tool
+result, unknowns и limitations явно перечислены.
+
+---
+
+## Документация
+
+- [Архитектура](docs/architecture.md)
+- [Agent Mesh](docs/agent-mesh.md)
+- [MCP Hub](docs/mcp-hub.md)
+- [Workflow-инструкции](docs/workflow-instructions.md)
+- [AGENTS.md](AGENTS.md) — контракт для AI-ассистентов
+
+---
+
+## Этика + ответственное использование
+
+Этот проект — для security-research, defensive-engineering, SDK-работы,
+reverse-инжиниринга собственного ПО и authorized testing. Не используй
+для несанкционированного доступа, для атак на чужие системы, или для
+обхода мер защиты прав на контент, которым ты не владеешь.
+
+MIT License. Pull requests welcome.

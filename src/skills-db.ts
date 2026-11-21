@@ -296,8 +296,15 @@ export function insertSkill(db: DatabaseSync, s: {
   topics: string[]; body: string;
   source_gz?: Uint8Array | null; source_sha?: string | null;
 }): void {
+  // A real upsert, not INSERT OR REPLACE: REPLACE deletes the old row without
+  // firing the AFTER DELETE trigger (recursive_triggers is off), which left a
+  // stale copy of an updated skill in skills_fts. ON CONFLICT … DO UPDATE fires
+  // skills_au, which swaps the FTS row.
   db.prepare(
-    "INSERT OR REPLACE INTO skills(name, description, type, topics_json, body, source_gz, source_sha) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    `INSERT INTO skills(name, description, type, topics_json, body, source_gz, source_sha) VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET
+       description = excluded.description, type = excluded.type, topics_json = excluded.topics_json,
+       body = excluded.body, source_gz = excluded.source_gz, source_sha = excluded.source_sha`
   ).run(
     s.name, s.description, s.type, JSON.stringify(s.topics ?? []), s.body,
     s.source_gz ?? null, s.source_sha ?? null,

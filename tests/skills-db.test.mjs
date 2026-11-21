@@ -94,3 +94,23 @@ test("skills-db: plugins / agents / prompts / stats", async () => {
     db.close();
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+test("skills-db: re-inserting a skill keeps exactly one FTS row (regression)", async () => {
+  // INSERT OR REPLACE used to leave the old version in skills_fts, so the
+  // db.yml "FTS index out of sync" check failed on the shipped DB.
+  const dir = await td();
+  try {
+    const db = createEmptyDb(join(dir, "test.db"));
+    const base = { name: "technique-x", description: "d", type: "technique", topics: ["t"] };
+    insertSkill(db, { ...base, body: "first version mentions zeppelin" });
+    insertSkill(db, { ...base, body: "second version mentions quasar" });
+    const n = (sql) => db.prepare(sql).get().c;
+    assert.equal(n("SELECT COUNT(*) c FROM skills"), 1);
+    assert.equal(n("SELECT COUNT(*) c FROM skills_fts"), 1);
+    assert.equal(n("SELECT COUNT(*) c FROM skills_fts WHERE skills_fts MATCH 'zeppelin'"), 0, "stale body gone");
+    assert.equal(n("SELECT COUNT(*) c FROM skills_fts WHERE skills_fts MATCH 'quasar'"), 1);
+    db.close();
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});

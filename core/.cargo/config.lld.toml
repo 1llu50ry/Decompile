@@ -1,39 +1,27 @@
 # LLVM/lld linker overrides.
-# Activate with: cp core/.cargo/config.lld.toml core/.cargo/config.toml
-# (CI release workflow copies it into place automatically before `cargo build`.)
+# Activated in CI by copying this file into `core/.cargo/config.toml`
+# before `cargo build`.
+#
+# IMPORTANT: linker overrides are opt-in per target. Only x86_64-linux-gnu
+# is overridden here because:
+#   - cross-rs runs inside Docker containers that don't inherit the host's
+#     clang+lld; forcing `linker = "clang"` breaks every cross build.
+#   - Windows MSVC's default toolchain already includes `link.exe`; forcing
+#     `lld-link.exe` requires an exact LLVM install path setup that choco
+#     doesn't reliably provide.
+#   - macOS runners already use clang+ld64 by default.
+#
+# The shared `[build]` rustflags apply to every target and give us
+# consistent optimization regardless of linker.
 
 [build]
-rustflags = [
-  "-Clinker-plugin-lto",
-  "-Ccodegen-units=1",
-]
+rustflags = ["-Ccodegen-units=1"]
 
-[target.x86_64-pc-windows-msvc]
-linker = "lld-link.exe"
+[profile.release]
+# lto = "thin" and codegen-units=1 already set in core/Cargo.toml.
+# Nothing to override here.
 
-[target.aarch64-pc-windows-msvc]
-linker = "lld-link.exe"
-
+# Native Linux x64 gets the LLVM linker (proven working on ubuntu-latest).
 [target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
-
-[target.aarch64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
-
-[target.x86_64-unknown-linux-musl]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
-
-[target.aarch64-unknown-linux-musl]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
-
-[target.x86_64-apple-darwin]
-linker = "clang"
-rustflags = ["-Clink-arg=-fuse-ld=lld"]
-
-[target.aarch64-apple-darwin]
 linker = "clang"
 rustflags = ["-Clink-arg=-fuse-ld=lld"]

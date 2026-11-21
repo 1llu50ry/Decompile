@@ -56,31 +56,27 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: install LLVM (Linux)
-        if: runner.os == 'Linux'
+      # LLVM is only needed for the native Linux x64 job (the only target
+      # where config.lld.toml forces clang+lld). Other platforms use
+      # their stock toolchain to stay reliable:
+      #   - Windows: MSVC's link.exe (ships with the runner)
+      #   - macOS: clang + ld64 (ships with the runner)
+      #   - cross targets: whatever the cross-rs Docker container provides
+      - name: install LLVM (Linux native only)
+        if: runner.os == 'Linux' && !matrix.cross
         run: |
           sudo apt-get update
           sudo apt-get install -y clang lld llvm
-
-      - name: install LLVM (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew update
-          brew install llvm lld
-          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
-
-      - name: install LLVM (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          choco install llvm --yes --no-progress
-          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: install Rust target
         run: rustup target add ${{ matrix.target }}
         shell: bash
 
-      - name: enable LLVM linker config
+      # Only apply the lld config on the native Linux x64 job. Every
+      # other target would either ignore the override (cross) or try to
+      # invoke a linker that doesn't exist (Windows w/o LLVM).
+      - name: enable LLVM linker config (Linux native)
+        if: runner.os == 'Linux' && !matrix.cross
         run: cp core/.cargo/config.lld.toml core/.cargo/config.toml
         shell: bash
 

@@ -21,6 +21,7 @@ import { constants as fsConstants } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { toolsHome } from "./tools-env.js";
 
 // --------------------------------------------------------------------
 // Shell-safety guard. Several tools spawn with `shell: true` on Windows
@@ -139,6 +140,9 @@ export interface ReBackend {
   mcpConfig: Record<string, unknown>;
   tags: string[];
   notes: string;
+  /** Set when no MCP server for this backend is published anywhere: launching it
+   *  is refused with this explanation instead of failing with ENOENT. */
+  unavailable?: string;
 }
 
 interface RunningProc {
@@ -272,7 +276,7 @@ const BACKENDS: Record<ReBackendId, ReBackend> = {
       },
     },
     tags: ["r2", "radare2", "static", "dynamic"],
-    notes: "r2 is scriptable, free, and bundled with vibe-re under tools/vendor/vibe-re/tools.",
+    notes: "r2 is scriptable and free. decompile drives it natively (r2_* tools); `decompile retools install radare2` installs it.",
   },
   "x64dbg-mcp": {
     id: "x64dbg-mcp",
@@ -1261,6 +1265,44 @@ const BACKENDS: Record<ReBackendId, ReBackend> = {
 };
 
 // ------------------------------------------------------------
+// Catalog honesty pass
+// ------------------------------------------------------------
+// These entries name MCP servers that are not published on PyPI/npm or
+// anywhere else (checked 2026-11-21), so their install/launch commands
+// cannot work. Keep the entries (they document the tool), but install only
+// the real underlying library and point at decompile's native tools where
+// they cover the job. `decompile retools install` provides the Python libs.
+const PHANTOM: Partial<Record<ReBackendId, { native?: string; keep?: string[] }>> = {
+  "windbg-mcp": {}, "hopper-mcp": {}, "jadx-mcp": {},
+  "angr-mcp": { keep: ["angr"] },
+  "capstone-mcp": { native: "disasm_x86_64", keep: ["capstone"] },
+  "pcileech-mcp": {}, "scylla-mcp": { native: "iat_rebuild_scan / iat_rebuild_emit" },
+  "volatility-mcp": { keep: ["volatility3"] },
+  "unicorn-mcp": { native: "emu_run / emu_arm64_run", keep: ["unicorn"] },
+  "retsync-mcp": {}, "ghidrathon-mcp": { native: "ghidra_run_script" }, "diaphora-mcp": { native: "bindiff / compare_binaries" },
+  "qiling-mcp": { keep: ["qiling"] }, "unidbg-mcp": {}, "openreality-mcp": {}, "qemu-trace-mcp": {},
+  "lldb-mcp": { native: "lldb_* (15 tools, incl. live sessions)" },
+  "yara-mcp": { native: "yara_scan / yara_parse", keep: ["yara-python"] },
+  "ba-sync-mcp": {}, "dolphin-dme-mcp": {}, "cemu-ipc-mcp": {},
+  "aflplusplus-mcp": {}, "honggfuzz-mcp": {}, "winafl-mcp": {},
+  "v8-inspector-mcp": {}, "cdp-mcp": {},
+  "idevice-mcp": { keep: ["pymobiledevice3"] },
+  "magisk-mcp": {}, "kdnet-mcp": {},
+  "gef-mcp": { native: "gdb_* (13 tools, incl. live sessions)" },
+  "retdec-mcp": { native: "r2_decompile / smart_decompile" }, "snowman-mcp": { native: "r2_decompile / smart_decompile" },
+};
+for (const [id, p] of Object.entries(PHANTOM) as [ReBackendId, { native?: string; keep?: string[] }][]) {
+  const b = BACKENDS[id];
+  if (!b) continue;
+  b.install = p.keep?.length ? [`pip install ${p.keep.join(" ")}   # the library; no MCP server is published`] : [];
+  b.unavailable =
+    `No MCP server for "${b.name}" is published (the ${b.launch.cmd} package does not exist).` +
+    (p.native ? ` decompile covers this natively: ${p.native}.` : "") +
+    (p.keep?.length ? ` The ${p.keep.join(", ")} library is installed by \`decompile retools install python\`.` : "");
+  b.notes = `${b.unavailable} ${b.notes}`.trim();
+}
+
+// ------------------------------------------------------------
 // Process registry
 // ------------------------------------------------------------
 
@@ -1308,6 +1350,26 @@ async function httpCall(url: string, init?: RequestInit, timeoutMs = 15_000): Pr
 // ------------------------------------------------------------
 // Register tools onto an McpServer
 // ------------------------------------------------------------
+
+/** Directory holding fakepdb.py + fakepdb/ — from `decompile retools install fakepdb`, or a legacy vendored copy. */
+async function fakepdbSource(projectRoot: string): Promise<string | null> {
+  const { readdir } = await import("node:fs/promises");
+  const roots = [join(toolsHome(), "fakepdb"), join(projectRoot, "tools", "vendor", "fakepdb")];
+  for (const root of roots) {
+    const stack = [root];
+    for (let depth = 0; stack.length && depth < 4; depth++) {
+      const next: string[] = [];
+      for (const dir of stack) {
+        if (await pathExists(join(dir, "fakepdb.py"))) return dir;
+        try {
+          for (const e of await readdir(dir, { withFileTypes: true })) if (e.isDirectory()) next.push(join(dir, e.name));
+        } catch { /* missing dir */ }
+      }
+      stack.splice(0, stack.length, ...next);
+    }
+  }
+  return null;
+}
 
 export function registerReTools(server: McpServer, projectRoot: string): void {
   // --------------------------------------------------------
@@ -1432,6 +1494,7 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
     async ({ id, extraArgs = [], env = {}, cwdOverride }: { id: string; extraArgs?: string[]; env?: Record<string, string>; cwdOverride?: string }) => {
       const b = BACKENDS[id as ReBackendId];
       if (!b) return { content: [{ type: "text" as const, text: `Unknown backend "${id}". Use list_re_backends.` }], isError: true as const };
+      if (b.unavailable) return { content: [{ type: "text" as const, text: b.unavailable }], isError: true as const };
       if (running.has(b.id)) {
         return { content: [{ type: "text" as const, text: `Backend "${id}" is already running with pid ${running.get(b.id)!.pid}.` }], isError: true as const };
       }
@@ -1716,50 +1779,8 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
     }
   );
 
-  // --------------------------------------------------------
-  // vibe_re
-  // --------------------------------------------------------
-  server.tool(
-    "vibe_re_run",
-    "Run a Vibe-RE Python tool from the vendored tools/vendor/vibe-re/retools or livetools. Each tool is a module under retools/ (disasm, decompiler, callgraph, cfg, xrefs, vtable, rtti, throwmap, sigdb, kb, search, asi_patcher, ...).",
-    {
-      module: z.string().describe("Module under retools/ or livetools/, e.g. 'retools.disasm', 'retools.callgraph', 'livetools.analyze'."),
-      args: z.array(z.string()).default([]).describe("CLI arguments passed to the module."),
-      cwd: z.string().optional().describe("Override working directory. Defaults to tools/vendor/vibe-re."),
-    },
-    async ({ module: modulePath, args, cwd }: { module: string; args?: string[]; cwd?: string }) => {
-      // Python -m needs a dotted module name; restrict to that alphabet
-      // (plus the -I isolated-mode flag already pinned below).
-      if (!/^[A-Za-z_][A-Za-z0-9_.]{0,127}$/.test(modulePath)) {
-        return { content: [{ type: "text" as const, text: `rejected module: must match ^[A-Za-z_][A-Za-z0-9_.]*$. Got: ${JSON.stringify(modulePath.slice(0, 80))}` }], isError: true as const };
-      }
-      try { safeShellArgs("args", args ?? []); }
-      catch (e) { return shellArgError(e); }
-      const workdir = cwd ?? join(projectRoot, "tools", "vendor", "vibe-re");
-      if (!(await pathExists(workdir))) {
-        return { content: [{ type: "text" as const, text: `vibe-re not vendored at ${workdir}. Install via tools/vendor/vibe-re.` }], isError: true as const };
-      }
-      return await new Promise((resolve) => {
-        const child = spawn("python", ["-I", "-m", modulePath, ...(args ?? [])], {
-          cwd: workdir,
-          env: process.env,
-          stdio: ["ignore", "pipe", "pipe"],
-          shell: process.platform === "win32",
-        });
-        let stdout = "";
-        let stderr = "";
-        child.stdout?.on("data", (b) => (stdout += b.toString()));
-        child.stderr?.on("data", (b) => (stderr += b.toString()));
-        child.on("exit", (code) => {
-          const out = `# vibe-re ${modulePath}\nexit=${code}\n\n## stdout\n\`\`\`\n${stdout.slice(0, 20_000)}\n\`\`\`\n\n## stderr\n\`\`\`\n${stderr.slice(0, 5_000)}\n\`\`\``;
-          resolve({ content: [{ type: "text" as const, text: out }] });
-        });
-        child.on("error", (e) => {
-          resolve({ content: [{ type: "text" as const, text: `spawn error: ${e.message}` }], isError: true as const });
-        });
-      });
-    }
-  );
+  // vibe_re_run was removed: vibe-re is replaced natively by src/native-r2.ts
+  // (r2_* tools), so there is no vendored tree to run.
 
   // --------------------------------------------------------
   // ida_run_script -- shell wrapper for IDA Pro scripts via idat
@@ -1848,7 +1869,7 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
   // --------------------------------------------------------
   server.tool(
     "fakepdb_install",
-    "Install the vendored FakePDB IDA plugin (tools/vendor/fakepdb) into the user's IDAUSR plugins directory. Default IDAUSR is %APPDATA%/Hex-Rays/IDA Pro on Windows and $HOME/.idapro on Linux/macOS. Pass `idausr` to override.",
+    "Install the FakePDB IDA plugin (Mixaill/FakePDB, fetched by `decompile retools install fakepdb` into ~/.decompile/tools/fakepdb) into the user's IDAUSR plugins directory. Default IDAUSR is %APPDATA%/Hex-Rays/IDA Pro on Windows and $HOME/.idapro on Linux/macOS. Pass `idausr` to override.",
     {
       idausr: z.string().optional().describe("Override IDAUSR path."),
       dryRun: z.boolean().default(false),
@@ -1861,8 +1882,8 @@ export function registerReTools(server: McpServer, projectRoot: string): void {
         : join(homedir(), ".idapro");
       const target = idausr ?? defIdausr;
       const plugins = join(target, "plugins");
-      const src = join(projectRoot, "tools", "vendor", "fakepdb");
-      if (!(await pathExists(src))) return { content: [{ type: "text" as const, text: `FakePDB not vendored at ${src}` }], isError: true as const };
+      const src = await fakepdbSource(projectRoot);
+      if (!src) return { content: [{ type: "text" as const, text: `FakePDB not found. Install it with: decompile retools install fakepdb` }], isError: true as const };
       if (dryRun) return { content: [{ type: "text" as const, text: `[dry] would copy:\n  ${join(src, "fakepdb.py")} -> ${join(plugins, "fakepdb.py")}\n  ${join(src, "fakepdb")} -> ${join(plugins, "fakepdb")}` }] };
       try {
         await mkdir(plugins, { recursive: true });

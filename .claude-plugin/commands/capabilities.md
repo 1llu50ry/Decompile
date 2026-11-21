@@ -19,4 +19,4 @@ Runs `decompile capabilities`. Returns two sections:
 
 Use this when you need to confirm a tool exists before calling it, or
 when picking between composite tools (`smart_decompile`, `analyze_binary`,
-`vibe_re_run`, `research_technique`) and lower-level primitives.
+`run`, `research_technique`) and lower-level primitives.

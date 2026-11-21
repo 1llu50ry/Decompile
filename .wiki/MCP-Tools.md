@@ -46,7 +46,7 @@ Composite:
 - `smart_decompile` — auto-pick + fallback chain + content-hash cache
 - `analyze_binary`, `analyze_project` — multi-pass static sweep
 - `compare_binaries`, `compare_projects` — diff two targets
-- `vibe_re_run` — end-to-end RE prompt loop
+- `run` — code harness: call every decompile tool from JavaScript, compose and loop; definitions persist
 - `research_technique` — look up a named technique with context
 
 ### Instrumentation + dynamic

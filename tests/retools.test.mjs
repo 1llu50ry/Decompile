@@ -20,9 +20,28 @@ test("every backend has launch.cmd + install[] + tags", () => {
   for (const id of ids) {
     const b = BACKENDS[id];
     assert.ok(b.launch?.cmd, `${id} missing launch.cmd`);
-    assert.ok(Array.isArray(b.install) && b.install.length > 0, `${id} missing install[]`);
+    // A backend whose MCP server isn't published may have nothing to install,
+    // but then it must say why (`unavailable`) instead of pretending.
+    assert.ok(Array.isArray(b.install) && (b.install.length > 0 || b.unavailable), `${id} missing install[]`);
     assert.ok(Array.isArray(b.tags) && b.tags.length > 0, `${id} missing tags[]`);
   }
+});
+
+test("no install step names a package that doesn't exist", () => {
+  // Checked against PyPI on 2026-11-21 — these MCP packages were never published.
+  const phantom = /\b(?:windbg|hopper|jadx|angr|capstone|memprocfs|scylla|volatility3|unicorn|retsync|ghidrathon|diaphora|qiling|unidbg|reko|qemu-trace|lldb|yara|bn-ghidra-sync|dme|cemu-ipc|aflplusplus|honggfuzz|winafl|cdp|idevice|magisk|kdnet|gef|retdec|snowman)-mcp\b/;
+  for (const id of ids) {
+    for (const step of BACKENDS[id].install) {
+      if (/^pip install /.test(step)) assert.doesNotMatch(step.split("#")[0], phantom, `${id}: ${step}`);
+    }
+  }
+});
+
+test("unavailable backends refuse to launch with an explanation", () => {
+  const u = ids.filter((id) => BACKENDS[id].unavailable);
+  assert.ok(u.length > 0);
+  for (const id of u) assert.match(BACKENDS[id].unavailable, /No MCP server/);
+  assert.match(BACKENDS["lldb-mcp"].unavailable, /lldb_\*/);
 });
 
 test("every backend has at least one supported OS", () => {

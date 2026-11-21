@@ -48,8 +48,7 @@ function unreachable(e: unknown): string {
     `Set MCP_CESERVER_HOST / MCP_CESERVER_PORT (default 127.0.0.1:52736), then either:`,
     `  • launch_re_backend id=cheat-engine-python`,
     `  • launch_re_backend id=cheat-engine-mcp`,
-    `  • launch_re_backend id=cheat-engine-python-bridge   (vendored)`,
-    `  • start ceserver + bridge manually from tools/vendor/cheatengine-mcp-bridge`,
+    `  • in Cheat Engine: load plugins-side/cheat-engine/mcp_bridge.lua (decompile retools install plugins copies it to CE's autorun)`,
   ].join("\n");
 }
 

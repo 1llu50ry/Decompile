@@ -111,7 +111,7 @@ Prefer composite tools when the user's question is pipeline-shaped:
 - `smart_decompile` — auto-pick backend + fallback chain
 - `analyze_binary` / `analyze_project` — multi-pass static sweep
 - `compare_binaries` / `compare_projects` — diff two targets
-- `vibe_re_run` — end-to-end RE prompt loop
+- `run` — code harness: call every decompile tool from JavaScript, compose and loop; definitions persist
 - `research_technique` — look up a named technique with context
 
 They return structured findings and handle backend outages.

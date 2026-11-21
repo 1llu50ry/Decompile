@@ -33,7 +33,7 @@ npm audit
 ## Shell-injection guard
 
 The server exposes a handful of tools that spawn external processes
-(`launch_re_backend`, `vibe_re_run`, `ida_run_script`,
+(`launch_re_backend`, `ida_run_script`,
 `fakepdb_run`, `ghidra_run_script`). On Windows, those spawns use
 `shell: true` so Node resolves `.cmd` / `.bat` / `PATH` — which opens
 a shell-injection sink for user-supplied string args.
@@ -44,8 +44,8 @@ metacharacters (`[\s;&|<>$\`"'\\!*?(){}[\]\n\r\0]`) before it reaches
 such a spawn. Every call site that takes user input has the guard
 wired in.
 
-`vibe_re_run`'s `module` argument additionally must match
-`^[A-Za-z_][A-Za-z0-9_.]*$` — only valid Python dotted module names.
+`run` (the code harness) executes JavaScript with the server's authority,
+like a shell — disable it with `MCP_CODE_HARNESS=0` where that is not wanted.
 
 ## Filesystem sandbox
 

@@ -5,7 +5,7 @@ iOS and Android RE converge on the same primitives: ARM/AArch64 decomp, Frida/Zy
 ## Workflows
 
 - **APK triage**: `apk_scan <path.apk>` → `dex_parse` on each DEX → `jadx-mcp` for Java decompile.
-- **IL2CPP games**: `il2cpp_metadata_parse` → `Il2CppDumper` via `vibe_re_run` or external.
+- **IL2CPP games**: `il2cpp_metadata_parse` → `Il2CppDumper` (external), or script it with `run`.
 - **Native library RE**: `elf_parse` → `superghidra-mcp` or `ida-pro-mcp` on `.so`.
 - **iOS**: `macho_parse` (fat + arm64e) → `hopper-mcp` → `idevice-mcp` for live attach → `frida-mcp` for Objective-C hooks.
 - **Rooted testing**: `magisk-mcp` + `frida-mcp` for anti-root bypass research.

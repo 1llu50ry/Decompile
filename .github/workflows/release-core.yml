@@ -91,12 +91,12 @@ jobs:
           [ "$n" -gt 100 ]
           ls -lh "$GITHUB_WORKSPACE/out/decompile.tgz"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: app-payload
           path: app.tar
           retention-days: 3
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: decompile-npm
           path: out/decompile.tgz
@@ -291,7 +291,7 @@ jobs:
           sha256sum "$a" > "$a.sha256"
           cat "$a.sha256"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: decompile-${{ matrix.target }}
           path: |

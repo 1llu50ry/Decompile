@@ -249,7 +249,7 @@ jobs:
           cargo build --release --target ${{ matrix.target }}
           file target/${{ matrix.target }}/release/decompile
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: app-payload
 
@@ -313,7 +313,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           pattern: decompile-*
